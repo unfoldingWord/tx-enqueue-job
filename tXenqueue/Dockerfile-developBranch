@@ -1,0 +1,26 @@
+# NOTE: This docker container is built automatically
+#       by the Docker Compose in the enclosing folder
+# It's also built automatically from Travis-CI
+#       after passing unit tests
+
+FROM python:alpine
+
+ADD . /code
+WORKDIR /code
+
+RUN pip3 install --requirement requirements.txt
+
+# Make http port available to the world outside this container
+EXPOSE 8000
+
+# Define environment variables
+ENV QUEUE_PREFIX dev-
+ENV DEBUG_MODE True
+# NOTE: The following environment variables can be set:
+#	QUEUE_PREFIX dev- (optional -- defaults to empty string)
+#	DEBUG_MODE True (optional -- defaults to False)
+#   REDIS_URL (optional -- defaults to 'redis')
+#   GRAPHITE_URL (optional -- defaults to 'localhost')
+
+# NOTE: this developBranch listens on 8011 (master on 8010)
+CMD ["gunicorn", "--bind", "0.0.0.0:8011", "tx_enqueue_main:app"]

@@ -1,0 +1,26 @@
+# NOTE: This docker container is built automatically
+#       by the Docker Compose in the enclosing folder
+# It's also built automatically from Travis-CI
+#       after passing unit tests
+
+FROM python:alpine
+
+ADD . /code
+WORKDIR /code
+
+RUN pip3 install --requirement requirements.txt
+
+# Make http port available to the world outside this container
+EXPOSE 8000
+
+# Define environment variables
+# (none defined here -- define them in the docker run command)
+# NOTE: The following environment variables must be set:
+#   REDIS_URL (defaults to 'redis')
+#   GRAPHITE_URL (defaults to 'localhost')
+# The following two are optional:
+#	QUEUE_PREFIX dev- (optional -- defaults to empty string)
+#	DEBUG_MODE True (optional -- defaults to False)
+
+# NOTE: this masterBranch listens on 8010 (develop on 8011)
+CMD ["gunicorn", "--bind", "0.0.0.0:8010", "tx_enqueue_main:app"]

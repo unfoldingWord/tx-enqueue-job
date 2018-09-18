@@ -1,0 +1,8 @@
+# .coveragerc to control coverage.py
+[run]
+source=
+    enqueue
+
+omit =
+    */__init__.py
+
