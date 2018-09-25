@@ -7,18 +7,19 @@
 # Python imports
 from os import getenv
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 # Library (PyPi) imports
-from flask import Flask, request
+from flask import Flask, request, jsonify
 # NOTE: We use StrictRedis() because we don't need the backwards compatibility of Redis()
 from redis import StrictRedis
 from rq import Queue, Worker
 from statsd import StatsClient # Graphite front-end
 
 # Local imports
-from check_posted_tx_payload import check_posted_tx_payload, check_posted_callback_payload
+from check_posted_tx_payload import check_posted_tx_payload #, check_posted_callback_payload
+from tx_enqueue_helpers import get_unique_job_id
 
 
 OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphite name) -- MUST match setup.py in tx-job-handler
@@ -44,8 +45,8 @@ else:
     our_adjusted_name = OUR_NAME # Will become our main queue name
     other_our_adjusted_name = 'dev-'+OUR_NAME # The other queue name
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
-our_callback_name = our_adjusted_name + CALLBACK_SUFFIX
-other_our_adjusted_callback_name = other_our_adjusted_name + CALLBACK_SUFFIX
+#our_callback_name = our_adjusted_name + CALLBACK_SUFFIX
+#other_our_adjusted_callback_name = other_our_adjusted_name + CALLBACK_SUFFIX
 
 
 # Enable DEBUG logging for dev- instances (but less logging for production)
@@ -63,6 +64,9 @@ logging.info(f"redis_hostname is {redis_hostname!r}")
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
 logging.info(f"graphite_url is {graphite_url!r}")
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=our_adjusted_name)
+
+
+TX_JOB_CDN_BUCKET = 'https://cdn.door43.org/tx/jobs/'
 
 
 
@@ -129,37 +133,54 @@ def job_receiver():
             failed_queue = Queue('failed', connection=redis_connection)
             len_failed_queue = len(failed_queue)
             stats_client.gauge('FailedQueueLength', len_failed_queue)
+
+            # Extend the given payload (dict) to add our required fields
+            our_response_dict = dict(response_dict)
+            our_response_dict.update({ \
+                                'job_id': get_unique_job_id(),
+                                'success':'true',
+                                'status':'queued',
+                                'queue_name':our_adjusted_name,
+                                'queued_at':datetime.utcnow(),
+                                })
+            if 'identifier' not in our_response_dict:
+                our_response_dict['identifier'] = our_response_dict['job_id']
+            our_response_dict['output'] = f"{TX_JOB_CDN_BUCKET}{our_response_dict['job_id']}.zip"
+            our_response_dict['expires_at'] = our_response_dict['queued_at'] + timedelta(days=1)
+            our_response_dict['eta'] = our_response_dict['queued_at'] + timedelta(minutes=5)
+            logging.debug(f"About to queue job: {our_response_dict}")
+
             # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
             #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
             #       The timeout value determines the max run time of the worker once the job is accessed
-            our_queue.enqueue('webhook.job', response_dict, timeout=JOB_TIMEOUT) # A function named webhook.job will be called by the worker
+            our_queue.enqueue('webhook.job', our_response_dict, timeout=JOB_TIMEOUT) # A function named webhook.job will be called by the worker
             # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
-            other_queue = Queue(other_our_adjusted_name, connection=redis_connection)
-
+            # Find out who our workers are
             #workers = Worker.all(connection=redis_connection) # Returns the actual worker objects
             #logging.debug(f"Total rq workers ({len(workers)}): {workers}")
             #our_queue_workers = Worker.all(queue=our_queue)
             #logging.debug(f"Our {our_adjusted_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
 
+            # Find out how many workers we have
             #worker_count = Worker.count(connection=redis_connection)
             #logging.debug(f"Total rq workers = {worker_count}")
             #our_queue_worker_count = Worker.count(queue=our_queue)
             #logging.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
 
-            info_message = f'{OUR_NAME} queued valid job to {our_adjusted_name} ' \
+            other_queue = Queue(other_our_adjusted_name, connection=redis_connection)
+            logging.info(f'{OUR_NAME} queued valid job to {our_adjusted_name} ' \
                         f'({len_our_queue} jobs now ' \
                             f'for {Worker.count(queue=our_queue)} workers, ' \
                         f'{len(other_queue)} jobs in {other_our_adjusted_name} queue ' \
                             f'for {Worker.count(queue=other_queue)} workers, ' \
-                        f'{len_failed_queue} failed jobs) at {datetime.utcnow()}'
-            logging.info(info_message)
-            return f'{OUR_NAME} queued valid job to {our_adjusted_name} at {datetime.utcnow()}'
+                        f'{len_failed_queue} failed jobs) at {datetime.utcnow()}')
+            return jsonify(our_response_dict)
         else:
             stats_client.incr('InvalidPostsReceived')
-            error_message = f'{OUR_NAME} ignored invalid payload; responding with {response_dict}'
-            logging.error(error_message)
-            return error_message, 400
+            response_dict['status'] = 'failed'
+            logging.error(f'{OUR_NAME} ignored invalid payload; responding with {response_dict}')
+            return jsonify(response_dict), 400
 # end of job_receiver()
 
 
@@ -194,11 +215,13 @@ def job_receiver():
 
             #other_callback_queue = Queue(other_our_adjusted_callback_name, connection=redis_connection)
 
+            ## Find out who our workers are
             ##workers = Worker.all(connection=redis_connection) # Returns the actual worker objects
             ##logging.debug(f"Total rq workers ({len(workers)}): {workers}")
             ##our_queue_workers = Worker.all(queue=our_queue)
             ##logging.debug(f"Our {our_callback_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
 
+            ## Find out how many workers we have
             ##worker_count = Worker.count(connection=redis_connection)
             ##logging.debug(f"Total rq workers = {worker_count}")
             ##our_queue_worker_count = Worker.count(queue=our_queue)
