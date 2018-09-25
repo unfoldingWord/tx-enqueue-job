@@ -9,7 +9,6 @@ language: python
 python:
   - '3.6'
   - '3.7-dev'
-  - '3.8-dev'
   - 'nightly'
 # NOTE: We only deploy on ONE of these tests being successful -- see condition below
 
