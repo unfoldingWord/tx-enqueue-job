@@ -40,10 +40,10 @@ composeEnqueueRedis:
 
 imageDev:
 	# NOTE: This build sets the prefix to 'dev-' and sets debug mode
-	docker build --file tXenqueue/Dockerfile-developBranch --tag unfoldingword/tx_enqueue_job:develop enqueue
+	docker build --file tXenqueue/Dockerfile-developBranch --tag unfoldingword/tx_enqueue_job:develop tXenqueue
 
 imageMaster:
-	docker build --file tXenqueue/Dockerfile-masterBranch --tag unfoldingword/tx_enqueue_job:master enqueue
+	docker build --file tXenqueue/Dockerfile-masterBranch --tag unfoldingword/tx_enqueue_job:master tXenqueue
 
 pushDevImage:
 	# Expects to be already logged into Docker, i.e., docker login -u $(DOCKER_USERNAME)
