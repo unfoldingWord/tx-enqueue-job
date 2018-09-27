@@ -4,6 +4,8 @@
 #       after passing unit tests
 
 FROM python:alpine
+#FROM ubuntu:latest
+#RUN apt update && apt install -y python3 python3-pip redis-tools net-tools
 
 ADD . /code
 WORKDIR /code
@@ -14,12 +16,13 @@ RUN pip3 install --requirement requirements.txt
 EXPOSE 8000
 
 # Define environment variables
+ENV REDIS_HOSTNAME=172.21.0.2
 ENV QUEUE_PREFIX dev-
 ENV DEBUG_MODE True
 # NOTE: The following environment variables can be set:
 #	QUEUE_PREFIX dev- (optional -- defaults to empty string)
 #	DEBUG_MODE True (optional -- defaults to False)
-#   REDIS_URL (optional -- defaults to 'redis')
+#   REDIS_HOSTNAME (optional -- defaults to 'redis')
 #   GRAPHITE_URL (optional -- defaults to 'localhost')
 
 # NOTE: this developBranch listens on 8011 (master on 8010)

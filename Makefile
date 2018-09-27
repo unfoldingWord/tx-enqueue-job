@@ -25,18 +25,26 @@ test:
 runFlask:
 	# NOTE: For very preliminary testing only (unless REDIS_HOSTNAME is already set-up)
 	# This runs the enqueue process in Flask (for development/testing)
-	#   and then connect at 127.0.0.1:5000/client/webhook
-	# Needs a redis instance running
-	# However, even without redis you can connect to http://127.0.0.1:5000/ and get the message there.
+	#   and then connect at 127.0.0.1:5000/
+	# Usually won't get far because there is often no redis instance running
 	QUEUE_PREFIX="dev-" FLASK_ENV="development" python3 tXenqueue/tx_enqueue_main.py
 
 composeEnqueueRedis:
 	# NOTE: For testing only (using the 'dev-' prefix)
-	# This runs the enqueue and redis processes via nginx/gunicorn
-	#   and then connect at 127.0.0.1:8080/client/webhook
+	# This runs the tXenqueue and redis processes via nginx/gunicorn
+	#   and then connect at 127.0.0.1:8090/
 	#   and "rq worker --config settings_enqueue" can connect to redis at 127.0.0.1:6379
-	docker-compose --file docker-compose-enqueue-redis.yaml build
-	docker-compose --file docker-compose-enqueue-redis.yaml up
+	docker-compose --file docker-compose-tXenqueue-redis.yaml build
+	docker-compose --file docker-compose-tXenqueue-redis.yaml up
+
+composeEnqueue:
+	# NOTE: For testing only (using the 'dev-' prefix)
+	# This runs the tXenqueue process via nginx/gunicorn
+	#   and then connect at 127.0.0.1:8090/
+	# It assumes redis is already running locally (usually from Door43-Enqueue_Job)
+	#   and so "rq worker --config settings_enqueue" can connect to redis at 127.0.0.1:6379
+	docker-compose --file docker-compose-tXenqueue.yaml build
+	docker-compose --file docker-compose-tXenqueue.yaml up
 
 imageDev:
 	# NOTE: This build sets the prefix to 'dev-' and sets debug mode

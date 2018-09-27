@@ -9,7 +9,7 @@ develop:
 # tX-Enqueue-Job
 
 This is part of tX translationConverter platform initiated by a commit to the
-tX (Translation Converter Service) at [tx.org](https://tx.org/???).
+tX (Translation Converter Service) at [tx.org](https://???).
 
 See [here](https://forum.ccbt.bible/t/door43-org-tx-development-architecture/65)
 for a diagram of the overall flow of the tx (translationConverter) platform.
@@ -19,13 +19,10 @@ That is more up-to-date than the write-up of the previous platform
 (which was too dependent on expensive AWS lambda functions).
 
 
-## tX modifications
+## tX modifications (from door43-enqueue-job)
 
-Modified June 2018 by RJH mainly to add vetting of the json payload
-before the job is added to the redis queue.
-
-Also added Graphite stats collection (using statsd package).
-and viewable with Grafana.
+Modified September 2018 by RJH to handle a different payload
+plus it listens on a different port so the two can run simultaneously.
 
 See the `Makefile` for a list of environment variables which are looked for.
 
@@ -50,7 +47,12 @@ To try Python code in Flask:
 
 To run (using Flask and gunicorn and nginx, plus redis) in three docker containers:
     make composeEnqueueRedis
-    (then send json payload data to http://127.0.0.1:8080/)
+    (then send json payload data to http://127.0.0.1:8090/)
+
+However, if Door43-Enqueue-Job is already running locally (with a local REDIS instance)
+to run (using Flask and gunicorn and nginx, with redis) in two docker containers:
+    make composeEnqueue
+    (then send json payload data to http://127.0.0.1:8090/)
 
 To build a docker image:
     (requires environment variable DOCKER_USERNAME to be set)
@@ -68,17 +70,14 @@ This enqueue process checks for various fields for simple validation of the
 payload, and then puts the job onto a (rq) queue (stored in redis) to be
 processed.
 
-There is also a callback service connected to the `callback/` URL.
-Callback jobs are placed onto a different queue.
-
 The Python code is run in Flask, which is then served by Green Unicorn (gunicorn)
 but with nginx facing the outside world.
 
 ## Testing
 
-Use `make composeEnqueueRedis` as above.
+Use `make composeEnqueueRedis` or `make composeEnqueue` as above.
 The tx_job_handler also needs to be running.
-Use a command like `curl -v http://127.0.0.1:8080/ -d @<path-to>/payload.json --header "Content-Type: application/json" --header "X-Gogs-Event: push"` to queue a job, and if successful, you should receive a response like `tx_webhook queued valid job to dev-tx_webhook at 2018-08-27 07:34`.
+Use a command like `curl -v http://127.0.0.1:8090/ -d @<path-to>/payload.json --header "Content-Type: application/json" --header "X-Gogs-Event: push"` to queue a job, and if successful, you should receive a JSON response.
 
 
 ## Deployment

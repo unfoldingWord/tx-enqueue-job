@@ -120,12 +120,15 @@ def job_receiver():
     """
     if request.method == 'POST':
         stats_client.incr('TotalPostsReceived')
-        logging.info(f"Enqueue received request: {request}")
+        logging.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
         response_ok_flag, response_dict = check_posted_tx_payload(request) # response_dict is json payload if successful, else error info
 
         if response_ok_flag:
+            logging.debug("job_receiver() processing good payload...")
+
             # Collect (and log) some helpful information
             stats_client.incr('GoodPostsReceived')
+            logging.debug("job_receiver() connecting to Redis...")
             redis_connection = StrictRedis(host=redis_hostname)
             our_queue = Queue(our_adjusted_name, connection=redis_connection)
             len_our_queue = len(our_queue)
@@ -135,6 +138,7 @@ def job_receiver():
             stats_client.gauge('FailedQueueLength', len_failed_queue)
 
             # Extend the given payload (dict) to add our required fields
+            logging.debug("Building response dict...")
             our_response_dict = dict(response_dict)
             our_response_dict.update({ \
                                 'job_id': get_unique_job_id(),

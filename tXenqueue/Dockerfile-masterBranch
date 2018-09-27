@@ -16,7 +16,7 @@ EXPOSE 8000
 # Define environment variables
 # (none defined here -- define them in the docker run command)
 # NOTE: The following environment variables must be set:
-#   REDIS_URL (defaults to 'redis')
+#   REDIS_HOSTNAME (defaults to 'redis')
 #   GRAPHITE_URL (defaults to 'localhost')
 # The following two are optional:
 #	QUEUE_PREFIX dev- (optional -- defaults to empty string)

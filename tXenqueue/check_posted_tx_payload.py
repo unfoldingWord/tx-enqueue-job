@@ -8,7 +8,7 @@ from tx_enqueue_helpers import get_gogs_user
 
 
 COMPULSORY_FIELDNAMES = 'user_token', 'resource_type', 'input_format', 'output_format', 'source'
-OPTIONAL_FIELDNAMES = 'callback', 'options'
+OPTIONAL_FIELDNAMES = 'callback', 'identifier', 'options'
 ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
 OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', 'page_margins', 'page_size', 'toc_levels'
 
@@ -27,6 +27,8 @@ def check_posted_tx_payload(request):
         True or False if payload checks out
         The payload that was checked or error dict
     """
+    logging.debug("check_posted_tx_payload()")
+
     # Bail if this is not a POST with a payload
     if not request.data:
         logging.error("Received request but no payload found")
@@ -45,7 +47,7 @@ def check_posted_tx_payload(request):
 
     # Get the json payload and check it
     payload_json = request.get_json()
-    print( "payload is", repr(payload_json))
+    logging.info(f"tX payload is {payload_json}")
 
     # Check for existance of unknown fieldnames
     for some_fieldname in payload_json:
@@ -120,7 +122,7 @@ def check_posted_tx_payload(request):
 
     ## Get the json payload and check it
     #payload_json = request.get_json()
-    #print( "callback payload is", repr(payload_json))
+    #logging.info( "callback payload is", repr(payload_json))
 
     ## TODO: What payload info do we need to check and to match to a job
     ### Bail if the URL to the repo is invalid
