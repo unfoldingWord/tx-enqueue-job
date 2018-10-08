@@ -79,40 +79,6 @@ app = Flask(__name__)
 logging.info(f"{our_adjusted_name} is up and ready to go...")
 
 
-## This code is for debugging only and can be removed
-#@app.route('/showDB/', methods=['GET'])
-#def show_DB():
-    #"""
-    #Display a helpful status list to a user connecting to our debug URL.
-    #"""
-    #r = StrictRedis(host=redis_hostname)
-    #result_string = f'This {OUR_NAME} enqueuing service has:'
-
-    ## Look at environment variables
-    #result_string += '<h1>Environment Variables</h1>'
-    #result_string += f"<p>QUEUE_PREFIX={getenv('QUEUE_PREFIX', '(not set)=>(no prefix)')}</p>"
-    #result_string += f"<p>FLASK_ENV={getenv('FLASK_ENV', '(not set)=>(normal/production)')}</p>"
-    #result_string += f"<p>REDIS_HOSTNAME={getenv('REDIS_HOSTNAME', '(not set)=>redis')}</p>"
-    #result_string += f"<p>GRAPHITE_HOSTNAME={getenv('GRAPHITE_HOSTNAME', '(not set)=>localhost')}</p>"
-
-    ## Look at all the potential queues
-    #for this_our_adjusted_name in (OUR_NAME, 'dev-'+OUR_NAME, 'failed'):
-        #q = Queue(this_our_adjusted_name, connection=r)
-        #queue_output_string = ''
-        ##queue_output_string += '<p>Job IDs ({0}): {1}</p>'.format(len(q.job_ids), q.job_ids)
-        #queue_output_string += f'<p>Jobs ({len(q.jobs)}): {q.jobs}</p>'
-        #result_string += f'<h1>{this_our_adjusted_name} queue:</h1>{queue_output_string}'
-
-    #if redis_hostname == 'redis': # Can't do this for production redis (too many keys!!!)
-        ## Look at the raw keys
-        #keys_output_string = ''
-        #for key in r.scan_iter():
-            #keys_output_string += '<p>' + key.decode() + '</p>\n'
-        #result_string += f'<h1>All keys ({len(r.keys())}):</h1>{keys_output_string}'
-
-    #return result_string
-## end of show_DB()
-
 
 # This is the main workhorse part of this code
 #   rq automatically returns a "Method Not Allowed" error for a GET, etc.
@@ -128,7 +94,13 @@ def job_receiver():
         stats_client.incr('TotalPostsReceived')
         logging.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
 
+        # Collect and log some helpful information
         our_queue = Queue(our_adjusted_name, connection=redis_connection)
+        len_our_queue = len(our_queue)
+        stats_client.gauge(prefix+'QueueLength', len_our_queue)
+        failed_queue = Queue('failed', connection=redis_connection)
+        len_failed_queue = len(failed_queue)
+        stats_client.gauge('FailedQueueLength', len_failed_queue)
 
         # Find out how many workers we have
         total_worker_count = Worker.count(connection=redis_connection)
@@ -137,22 +109,13 @@ def job_receiver():
         logging.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
         stats_client.gauge(our_adjusted_name+'WorkersAvailable', our_queue_worker_count)
         if our_queue_worker_count < 1:
-            response_dict = {'error': 'No tX job handler workers available.',
-                             'status': 'failed'}
-            logging.error(f'{OUR_NAME} responding with 502: {response_dict}')
-            return jsonify(response_dict), 502 # Bad Gateway (or could do 503 Service Unavailable)
+            logging.critical(f'{our_adjusted_name} has no job handler workers running!')
+            # Go ahead and queue the job anyway for when a worker is restarted
 
         response_ok_flag, response_dict = check_posted_tx_payload(request) # response_dict is json payload if successful, else error info
         if response_ok_flag:
-            logging.debug("job_receiver() processing good payload...")
-
-            # Collect (and log) some helpful information
+            logging.debug("tX_job_receiver processing good payload...")
             stats_client.incr('GoodPostsReceived')
-            len_our_queue = len(our_queue)
-            stats_client.gauge(prefix+'QueueLength', len_our_queue)
-            failed_queue = Queue('failed', connection=redis_connection)
-            len_failed_queue = len(failed_queue)
-            stats_client.gauge('FailedQueueLength', len_failed_queue)
 
             # Extend the given payload (dict) to add our required fields
             logging.debug("Building response dict...")
@@ -189,6 +152,7 @@ def job_receiver():
             #our_queue_worker_count = Worker.count(queue=our_queue)
             #logging.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
 
+            len_our_queue = len(our_queue) # Update
             other_queue = Queue(other_our_adjusted_name, connection=redis_connection)
             logging.info(f'{OUR_NAME} queued valid job to {our_adjusted_name} ' \
                         f'({len_our_queue} jobs now ' \
