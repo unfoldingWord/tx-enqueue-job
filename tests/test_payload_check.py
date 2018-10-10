@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock
 import json
+import logging
 
 from tXenqueue.check_posted_tx_payload import check_posted_tx_payload
 
@@ -11,7 +12,7 @@ class TestPayloadCheck(TestCase):
         payload_json = ''
         mock_request = Mock()
         mock_request.data = payload_json
-        output = check_posted_tx_payload(mock_request)
+        output = check_posted_tx_payload(mock_request, logging)
         expected = False, {
             'error': 'No payload found. You must submit a POST request'
         }
@@ -23,7 +24,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock()
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'This does not appear to be from DCS.'
         #}
@@ -35,7 +36,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock()
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'This does not appear to be from DCS.'
         #}
@@ -47,7 +48,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock()
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'This does not appear to be a push.'
         #}
@@ -59,7 +60,7 @@ class TestPayloadCheck(TestCase):
         mock_request = Mock(**{'get_json.return_value':payload_json})
         mock_request.headers = headers
         mock_request.data = payload_json
-        output = check_posted_tx_payload(mock_request)
+        output = check_posted_tx_payload(mock_request, logging)
         expected = False, {
             'error': 'Missing user_token, Missing resource_type, Missing input_format, Missing output_format, Missing source'
         }
@@ -75,7 +76,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'The repo does not belong to https://git.tx.org.'
         #}
@@ -91,7 +92,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'No commit branch specified.'
         #}
@@ -108,7 +109,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'Could not determine commit branch.'
         #}
@@ -125,7 +126,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'No default branch specified.'
         #}
@@ -143,7 +144,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = False, {
             #'error': 'Commit branch: notMaster is not the default branch.'
         #}
@@ -161,7 +162,7 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = True, payload_json
         #self.assertEqual(output, expected)
 
@@ -172,6 +173,6 @@ class TestPayloadCheck(TestCase):
         #mock_request = Mock(**{'get_json.return_value':payload_json})
         #mock_request.headers = headers
         #mock_request.data = payload_json
-        #output = check_posted_tx_payload(mock_request)
+        #output = check_posted_tx_payload(mock_request, logging)
         #expected = True, payload_json
         #self.assertEqual(output, expected)

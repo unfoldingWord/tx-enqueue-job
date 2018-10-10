@@ -36,8 +36,21 @@ JOB_TIMEOUT = '200s' # Then a running job (taken out of the queue) will be consi
 
 # Look at relevant environment variables
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable -- set to 'dev-' for development
+
+
+# Setup logging
+logger = logging.getLogger()
+sh = logging.StreamHandler(sys.stdout)
+head = '%(asctime)s - %(levelname)s: %(message)s'
+sh.setFormatter(logging.Formatter(head))
+logger.addHandler(sh)
+# Enable DEBUG logging for dev- instances (but less logging for production)
+logger.setLevel(logging.DEBUG if prefix else logging.INFO)
+
+
+# Setup queue variables
 if prefix not in ('', 'dev-'):
-    logging.critical(f"Unexpected prefix: {prefix!r} -- expected '' or 'dev-'")
+    logger.critical(f"Unexpected prefix: {prefix!r} -- expected '' or 'dev-'")
 if prefix:
     our_adjusted_name = prefix + OUR_NAME # Will become our main queue name
     other_our_adjusted_name = OUR_NAME # The other queue name
@@ -49,26 +62,23 @@ else:
 #other_our_adjusted_callback_name = other_our_adjusted_name + CALLBACK_SUFFIX
 
 
-# Enable DEBUG logging for dev- instances (but less logging for production)
-logging.basicConfig(level=logging.DEBUG if prefix else logging.INFO)
-
 prefix_string = f" with prefix {prefix!r}" if prefix else ""
-logging.info(f"enqueueMain.py running on Python v{sys.version}{prefix_string}")
+logger.info(f"enqueueMain.py running on Python v{sys.version}{prefix_string}")
 
 
 # Get the redis URL from the environment, otherwise use a local test instance
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
-logging.info(f"redis_hostname is {redis_hostname!r}")
+logger.info(f"redis_hostname is {redis_hostname!r}")
 # And now connect so it fails at import time if no Redis instance available
-logging.debug("tX_job_receiver() connecting to Redis...")
+logger.debug("tX_job_receiver() connecting to Redis...")
 redis_connection = StrictRedis(host=redis_hostname)
-logging.debug("Getting total worker count in order to verify working Redis connection...")
+logger.debug("Getting total worker count in order to verify working Redis connection...")
 total_worker_count = Worker.count(connection=redis_connection)
-logging.debug(f"Total rq workers = {total_worker_count}")
+logger.debug(f"Total rq workers = {total_worker_count}")
 
 # Get the Graphite URL from the environment, otherwise use a local test instance
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
-logging.info(f"graphite_url is {graphite_url!r}")
+logger.info(f"graphite_url is {graphite_url!r}")
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=our_adjusted_name)
 
 
@@ -76,7 +86,7 @@ TX_JOB_CDN_BUCKET = 'https://cdn.door43.org/tx/jobs/'
 
 
 app = Flask(__name__)
-logging.info(f"{our_adjusted_name} is up and ready to go...")
+logger.info(f"{our_adjusted_name} is up and ready to go...")
 
 
 
@@ -92,7 +102,7 @@ def job_receiver():
     """
     if request.method == 'POST':
         stats_client.incr('TotalPostsReceived')
-        logging.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
+        logger.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
 
         # Collect and log some helpful information
         our_queue = Queue(our_adjusted_name, connection=redis_connection)
@@ -104,21 +114,22 @@ def job_receiver():
 
         # Find out how many workers we have
         total_worker_count = Worker.count(connection=redis_connection)
-        logging.debug(f"Total rq workers = {total_worker_count}")
+        logger.debug(f"Total rq workers = {total_worker_count}")
         our_queue_worker_count = Worker.count(queue=our_queue)
-        logging.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
+        logger.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
         stats_client.gauge(our_adjusted_name+'WorkersAvailable', our_queue_worker_count)
         if our_queue_worker_count < 1:
-            logging.critical(f'{our_adjusted_name} has no job handler workers running!')
+            logger.critical(f'{our_adjusted_name} has no job handler workers running!')
             # Go ahead and queue the job anyway for when a worker is restarted
 
-        response_ok_flag, response_dict = check_posted_tx_payload(request) # response_dict is json payload if successful, else error info
+        response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
+        # response_dict is json payload if successful, else error info
         if response_ok_flag:
-            logging.debug("tX_job_receiver processing good payload...")
+            logger.debug("tX_job_receiver processing good payload...")
             stats_client.incr('GoodPostsReceived')
 
             # Extend the given payload (dict) to add our required fields
-            logging.debug("Building response dict...")
+            logger.debug("Building response dict...")
             our_response_dict = dict(response_dict)
             our_response_dict.update({ \
                                 'job_id': get_unique_job_id(),
@@ -132,7 +143,7 @@ def job_receiver():
             our_response_dict['output'] = f"{TX_JOB_CDN_BUCKET}{our_response_dict['job_id']}.zip"
             our_response_dict['expires_at'] = our_response_dict['queued_at'] + timedelta(days=1)
             our_response_dict['eta'] = our_response_dict['queued_at'] + timedelta(minutes=5)
-            logging.debug(f"About to queue job: {our_response_dict}")
+            logger.debug(f"About to queue job: {our_response_dict}")
 
             # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
             #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
@@ -142,19 +153,19 @@ def job_receiver():
 
             # Find out who our workers are
             #workers = Worker.all(connection=redis_connection) # Returns the actual worker objects
-            #logging.debug(f"Total rq workers ({len(workers)}): {workers}")
+            #logger.debug(f"Total rq workers ({len(workers)}): {workers}")
             #our_queue_workers = Worker.all(queue=our_queue)
-            #logging.debug(f"Our {our_adjusted_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
+            #logger.debug(f"Our {our_adjusted_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
 
             # Find out how many workers we have
             #worker_count = Worker.count(connection=redis_connection)
-            #logging.debug(f"Total rq workers = {worker_count}")
+            #logger.debug(f"Total rq workers = {worker_count}")
             #our_queue_worker_count = Worker.count(queue=our_queue)
-            #logging.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
+            #logger.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
 
             len_our_queue = len(our_queue) # Update
             other_queue = Queue(other_our_adjusted_name, connection=redis_connection)
-            logging.info(f'{OUR_NAME} queued valid job to {our_adjusted_name} ' \
+            logger.info(f'{OUR_NAME} queued valid job to {our_adjusted_name} ' \
                         f'({len_our_queue} jobs now ' \
                             f'for {Worker.count(queue=our_queue)} workers, ' \
                         f'{len(other_queue)} jobs in {other_our_adjusted_name} queue ' \
@@ -164,7 +175,7 @@ def job_receiver():
         else:
             stats_client.incr('InvalidPostsReceived')
             response_dict['status'] = 'failed'
-            logging.error(f'{OUR_NAME} ignored invalid payload; responding with {response_dict}')
+            logger.error(f'{OUR_NAME} ignored invalid payload; responding with {response_dict}')
             return jsonify(response_dict), 400
 # end of job_receiver()
 
@@ -179,7 +190,7 @@ def job_receiver():
     #"""
     #if request.method == 'POST':
         #stats_client.incr('TotalCallbackPostsReceived')
-        #logging.info(f"Enqueue received callback request: {request}")
+        #logger.info(f"Enqueue received callback request: {request}")
         #response_ok_flag, response_dict = check_posted_callback_payload(request) # response_dict is json payload if successful, else error info
 
         #if response_ok_flag:
@@ -202,15 +213,15 @@ def job_receiver():
 
             ## Find out who our workers are
             ##workers = Worker.all(connection=redis_connection) # Returns the actual worker objects
-            ##logging.debug(f"Total rq workers ({len(workers)}): {workers}")
+            ##logger.debug(f"Total rq workers ({len(workers)}): {workers}")
             ##our_queue_workers = Worker.all(queue=our_queue)
-            ##logging.debug(f"Our {our_callback_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
+            ##logger.debug(f"Our {our_callback_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
 
             ## Find out how many workers we have
             ##worker_count = Worker.count(connection=redis_connection)
-            ##logging.debug(f"Total rq workers = {worker_count}")
+            ##logger.debug(f"Total rq workers = {worker_count}")
             ##our_queue_worker_count = Worker.count(queue=our_queue)
-            ##logging.debug(f"Our {our_callback_name} queue workers = {our_queue_worker_count}")
+            ##logger.debug(f"Our {our_callback_name} queue workers = {our_queue_worker_count}")
 
             #info_message = f'{OUR_NAME} queued valid callback job to {our_callback_name} ' \
                         #f'({len_our_queue} jobs now ' \
@@ -218,12 +229,12 @@ def job_receiver():
                         #f'{len(other_callback_queue)} jobs in {other_our_adjusted_callback_name} queue ' \
                             #f'for {Worker.count(queue=other_callback_queue)} workers, ' \
                         #f'{len_failed_queue} failed jobs) at {datetime.utcnow()}'
-            #logging.info(info_message)
+            #logger.info(info_message)
             #return f'{OUR_NAME} queued valid callback job to {our_callback_name} at {datetime.utcnow()}'
         #else:
             #stats_client.incr('InvalidCallbackPostsReceived')
             #error_message = f'{OUR_NAME} ignored invalid callback payload; responding with {response_dict}'
-            #logging.error(error_message)
+            #logger.error(error_message)
             #return error_message, 400
 ## end of callback_receiver()
 
