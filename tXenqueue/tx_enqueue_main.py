@@ -133,12 +133,13 @@ def job_receiver():
         logger.debug("Building response dict...")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
-                            'job_id': get_unique_job_id(),
                             'success':'true',
                             'status':'queued',
                             'queue_name':our_adjusted_name,
                             'queued_at':datetime.utcnow(),
                             })
+        if 'job_id' not in our_response_dict:
+            our_response_dict['job_id'] = get_unique_job_id()
         if 'identifier' not in our_response_dict:
             our_response_dict['identifier'] = our_response_dict['job_id']
         our_response_dict['output'] = f"{TX_JOB_CDN_BUCKET}{our_response_dict['job_id']}.zip"
