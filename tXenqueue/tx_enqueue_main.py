@@ -136,15 +136,15 @@ def job_receiver():
                             'success':'true',
                             'status':'queued',
                             'queue_name':our_adjusted_name,
-                            'queued_at':datetime.utcnow(),
+                            'tx_job_queued_at':datetime.utcnow(),
                             })
         if 'job_id' not in our_response_dict:
             our_response_dict['job_id'] = get_unique_job_id()
         if 'identifier' not in our_response_dict:
             our_response_dict['identifier'] = our_response_dict['job_id']
         our_response_dict['output'] = f"{TX_JOB_CDN_BUCKET}{our_response_dict['job_id']}.zip"
-        our_response_dict['expires_at'] = our_response_dict['queued_at'] + timedelta(days=1)
-        our_response_dict['eta'] = our_response_dict['queued_at'] + timedelta(minutes=5)
+        our_response_dict['expires_at'] = our_response_dict['tx_job_queued_at'] + timedelta(days=1)
+        our_response_dict['eta'] = our_response_dict['tx_job_queued_at'] + timedelta(minutes=5)
         our_response_dict['tx_retry_count'] = 0
         logger.debug(f"About to queue job: {our_response_dict}")
 
