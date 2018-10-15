@@ -83,7 +83,7 @@ stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
 
-TX_JOB_CDN_BUCKET = 'https://cdn.door43.org/tx/job/'
+TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 
 
 app = Flask(__name__)
