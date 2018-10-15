@@ -62,7 +62,7 @@ class TestPayloadCheck(TestCase):
         mock_request.data = payload_json
         output = check_posted_tx_payload(mock_request, logging)
         expected = False, {
-            'error': 'Missing user_token, Missing resource_type, Missing input_format, Missing output_format, Missing source'
+            'error': 'Missing job_id, Missing user_token, Missing resource_type, Missing input_format, Missing output_format, Missing source'
         }
         self.assertEqual(output, expected)
 
