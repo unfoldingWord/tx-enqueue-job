@@ -5,10 +5,12 @@
 from tx_enqueue_helpers import get_gogs_user
 
 
-COMPULSORY_FIELDNAMES = 'user_token', 'resource_type', 'input_format', 'output_format', 'source'
-OPTIONAL_FIELDNAMES = 'callback', 'identifier', 'options'
+COMPULSORY_FIELDNAMES = 'job_id', 'user_token', \
+                'resource_type', 'input_format', 'output_format', 'source'
+OPTIONAL_FIELDNAMES = 'callback', 'identifier', 'options', 'door43_webhook_received_at'
 ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
-OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', 'page_margins', 'page_size', 'toc_levels'
+OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
+                        'page_margins', 'page_size', 'toc_levels'
 
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 KNOWN_RESOURCE_TYPES = 'bible', 'obs', 'ta', 'tn', 'tq', 'tw'

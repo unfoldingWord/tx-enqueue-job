@@ -83,7 +83,7 @@ stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
 
-TX_JOB_CDN_BUCKET = 'https://cdn.door43.org/tx/jobs/'
+TX_JOB_CDN_BUCKET = 'https://cdn.door43.org/tx/job/'
 
 
 app = Flask(__name__)
@@ -130,7 +130,7 @@ def job_receiver():
         stats_client.incr('posts.succeeded')
 
         # Extend the given payload (dict) to add our required fields
-        logger.debug("Building response dict...")
+        logger.debug("Building our response dict...")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
                             'success':'true',
