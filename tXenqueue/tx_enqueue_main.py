@@ -127,10 +127,9 @@ def job_receiver():
     # response_dict is json payload if successful, else error info
     if response_ok_flag:
         logger.debug("tX_job_receiver processing good payload...")
-        stats_client.incr('posts.succeeded')
 
         # Extend the given payload (dict) to add our required fields
-        logger.debug("Building our response dict...")
+        #logger.debug("Building our response dict...")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
                             'success':'true',
@@ -174,6 +173,7 @@ def job_receiver():
                     f'{len(other_queue)} jobs in {other_our_adjusted_name} queue ' \
                         f'for {Worker.count(queue=other_queue)} workers, ' \
                     f'{len_failed_queue} failed jobs) at {datetime.utcnow()}')
+        stats_client.incr('posts.succeeded')
         return jsonify(our_response_dict)
     else:
         stats_client.incr('posts.failed')
