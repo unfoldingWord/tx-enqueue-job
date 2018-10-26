@@ -91,6 +91,33 @@ logger.info(f"{our_adjusted_name} is up and ready to go...")
 
 
 
+def handle_failed_queue(our_queue_name):
+    """
+    Go through the failed queue, and see how many entries originated from our queue.
+
+    Of those, permanently delete any that are older than two weeks old.
+    """
+    failed_queue = Queue('failed', connection=redis_connection)
+    len_failed_queue = len(failed_queue)
+    if len_failed_queue:
+        logger.debug(f"There are {len_failed_queue} total jobs in failed queue")
+
+    len_our_failed_queue = 0
+    for failed_job in failed_queue.jobs.copy():
+        if failed_job.origin == our_queue_name:
+            failed_duration = datetime.utcnow() - failed_job.enqueued_at
+            if failed_duration >= timedelta(weeks=2):
+                logger.info(f"Deleting expired '{our_queue_name}' failed job from {failed_job.enqueued_at}")
+                failed_job.delete() # .cancel() doesn't delete the Redis hash
+            else:
+                len_our_failed_queue += 1
+
+    if len_our_failed_queue:
+        logger.info(f"Have {len_our_failed_queue} of our jobs in failed queue")
+    return len_our_failed_queue
+# end of function handle_failed_queue
+
+
 # This is the main workhorse part of this code
 #   rq automatically returns a "Method Not Allowed" error for a GET, etc.
 @app.route('/'+WEBHOOK_URL_SEGMENT, methods=['POST'])
@@ -109,9 +136,8 @@ def job_receiver():
     our_queue = Queue(our_adjusted_name, connection=redis_connection)
     len_our_queue = len(our_queue)
     stats_client.gauge('queue.length.current', len_our_queue)
-    failed_queue = Queue('failed', connection=redis_connection)
-    len_failed_queue = len(failed_queue)
-    stats_client.gauge('queue.length.failed', len_failed_queue)
+    len_our_failed_queue = handle_failed_queue(our_adjusted_name)
+    stats_client.gauge('webhook.queue.length.failed', len_our_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
@@ -172,7 +198,7 @@ def job_receiver():
                         f'for {Worker.count(queue=our_queue)} workers, ' \
                     f'{len(other_queue)} jobs in {other_our_adjusted_name} queue ' \
                         f'for {Worker.count(queue=other_queue)} workers, ' \
-                    f'{len_failed_queue} failed jobs) at {datetime.utcnow()}')
+                    f'{len_our_failed_queue} failed jobs) at {datetime.utcnow()}')
         stats_client.incr('posts.succeeded')
         return jsonify(our_response_dict)
     else:
