@@ -13,8 +13,8 @@ OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
 
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
-KNOWN_RESOURCE_TYPES = 'bible', 'obs', 'ta', 'tn', 'tq', 'tw'
-KNOWN_INPUT_FORMATS = 'md', 'usfm'
+KNOWN_RESOURCE_TYPES = 'bible', 'obs', 'ta', 'tn', 'tq', 'tw', 'ult', 'ust', 'ugnt', 'uhb', 'ulb'
+KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt'
 KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
 
 
@@ -34,16 +34,10 @@ def check_posted_tx_payload(request, logger):
         logger.error("Received request but no payload found")
         return False, {'error': 'No payload found. You must submit a POST request'}
 
-    # TODO: What headers do we need to check ???
-    ## Bail if this is not from DCS
+    # TODO: Should we check any headers ???
     #if 'X-Gogs-Event' not in request.headers:
         #logger.error(f"Cannot find 'X-Gogs-Event' in {request.headers}")
         #return False, {'error': 'This does not appear to be from DCS.'}
-
-    ## Bail if this is not a push event
-    #if not request.headers['X-Gogs-Event'] == 'push':
-        #logger.error(f"X-Gogs-Event is not a push in {request.headers}")
-        #return False, {'error': 'This does not appear to be a push.'}
 
     # Get the json payload and check it
     payload_json = request.get_json()
@@ -54,7 +48,7 @@ def check_posted_tx_payload(request, logger):
         if some_fieldname not in ALL_FIELDNAMES:
             logger.warning(f'Unexpected {some_fieldname} field in tX payload')
 
-    # Check for existance of compulsory fieldnames
+    # Check for existence of compulsory fieldnames
     error_list = []
     for compulsory_fieldname in COMPULSORY_FIELDNAMES:
         if compulsory_fieldname not in payload_json:
@@ -66,7 +60,7 @@ def check_posted_tx_payload(request, logger):
     if error_list:
         return False, {'error': ', '.join(error_list)}
 
-    # NOTE: We only treat unknown types as warnings -- the job handling has the authoritative list
+    # NOTE: We only treat unknown types as warnings -- the job handler has the authoritative list
     if payload_json['resource_type'] not in KNOWN_RESOURCE_TYPES:
         logger.warning(f"Unknown {payload_json['resource_type']!r} resource type in tX payload")
     if payload_json['input_format'] not in KNOWN_INPUT_FORMATS:
@@ -92,65 +86,3 @@ def check_posted_tx_payload(request, logger):
     logger.info("tX payload seems ok")
     return True, payload_json
 # end of check_posted_tx_payload
-
-
-
-#def check_posted_callback_payload(request):
-    #"""
-    #Accepts callback notification from TX.
-        #Parameter is a rq request object
-
-    #Returns a 2-tuple:
-        #True or False if payload checks out
-        #The payload that was checked or error dict
-    #"""
-    ## Bail if this is not a POST with a payload
-    #if not request.data:
-        #logger.error("Received request but no payload found")
-        #return False, {'error': 'No payload found. You must submit a POST request'}
-
-    ## TODO: What headers do we need to check ???
-    ### Bail if this is not from tX
-    ##if 'X-Gogs-Event' not in request.headers:
-        ##logger.error(f"Cannot find 'X-Gogs-Event' in {request.headers}")
-        ##return False, {'error': 'This does not appear to be from tX.'}
-
-    ### Bail if this is not a push event
-    ##if not request.headers['X-Gogs-Event'] == 'push':
-        ##logger.error(f"X-Gogs-Event is not a push in {request.headers}")
-        ##return False, {'error': 'This does not appear to be a push.'}
-
-    ## Get the json payload and check it
-    #payload_json = request.get_json()
-    #logger.info( "callback payload is", repr(payload_json))
-
-    ## TODO: What payload info do we need to check and to match to a job
-    ### Bail if the URL to the repo is invalid
-    ##try:
-        ##if not payload_json['repository']['html_url'].startswith(GOGS_URL):
-            ##logger.error(f"The repo at {payload_json['repository']['html_url']!r} does not belong to {GOGS_URL!r}")
-            ##return False, {'error': f'The repo does not belong to {GOGS_URL}.'}
-    ##except KeyError:
-        ##logger.error("No repo URL specified")
-        ##return False, {'error': 'No repo URL specified.'}
-
-    ### Bail if the commit branch is not the default branch
-    ##try:
-        ##commit_branch = payload_json['ref'].split('/')[2]
-    ##except (IndexError, AttributeError):
-        ##logger.error(f"Could not determine commit branch from {payload_json['ref']}")
-        ##return False, {'error': 'Could not determine commit branch.'}
-    ##except KeyError:
-        ##logger.error("No commit branch specified")
-        ##return False, {'error': 'No commit branch specified.'}
-    ##try:
-        ##if commit_branch != payload_json['repository']['default_branch']:
-            ##logger.error(f'Commit branch: {commit_branch} is not the default branch')
-            ##return False, {'error': f'Commit branch: {commit_branch} is not the default branch.'}
-    ##except KeyError:
-        ##logger.error("No default branch specified")
-        ##return False, {'error': 'No default branch specified.'}
-
-    #logger.info("Callback payload seems ok")
-    #return True, payload_json
-## end of check_posted_callback_payload
