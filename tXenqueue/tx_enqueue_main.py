@@ -34,15 +34,14 @@ WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable -- set to 'dev-' for development
 
 
-JOB_TIMEOUT = '300s' if prefix else '240s' # Then a running job (taken out of the queue) will be considered to have failed
+JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
 
 
 # Setup logging
 logger = logging.getLogger()
 sh = logging.StreamHandler(sys.stdout)
-head = '%(asctime)s - %(levelname)s: %(message)s'
-sh.setFormatter(logging.Formatter(head))
+sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
