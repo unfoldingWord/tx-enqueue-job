@@ -17,9 +17,13 @@ RUN pip3 install --requirement requirements.txt
 EXPOSE 8000
 
 # Define environment variables
-ENV REDIS_HOSTNAME=172.28.0.2
+ENV REDIS_HOSTNAME=172.31.0.2
 ENV QUEUE_PREFIX dev-
 ENV DEBUG_MODE True
+# NOTE: The following environment variables are expected to be set for testing:
+#	TX_DATABASE_PW
+#	AWS_ACCESS_KEY_ID
+#	AWS_SECRET_ACCESS_KEY
 # NOTE: The following environment variables can be set:
 #	QUEUE_PREFIX dev- (optional -- defaults to empty string)
 #	DEBUG_MODE True (optional -- defaults to False)

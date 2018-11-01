@@ -29,20 +29,19 @@ OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphit
 WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '/'
 #CALLBACK_URL_SEGMENT = WEBHOOK_URL_SEGMENT + 'callback/'
 
-JOB_TIMEOUT = '200s' # Then a running job (taken out of the queue) will be considered to have failed
-    # NOTE: This is only the time until webhook.py returns after submitting the jobs
-    #           -- the actual conversion jobs might still be running.
-
 
 # Look at relevant environment variables
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable -- set to 'dev-' for development
 
 
+JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of the queue) will be considered to have failed
+    # NOTE: This is the time until webhook.py returns after running the jobs.
+
+
 # Setup logging
 logger = logging.getLogger()
 sh = logging.StreamHandler(sys.stdout)
-head = '%(asctime)s - %(levelname)s: %(message)s'
-sh.setFormatter(logging.Formatter(head))
+sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
@@ -202,8 +201,8 @@ def job_receiver():
         stats_client.incr('posts.succeeded')
         return jsonify(our_response_dict)
     else:
-        stats_client.incr('posts.failed')
-        response_dict['status'] = 'failed'
+        stats_client.incr('posts.invalid')
+        response_dict['status'] = 'invalid'
         logger.error(f'{OUR_NAME} ignored invalid payload; responding with {response_dict}')
         return jsonify(response_dict), 400
 # end of job_receiver()
