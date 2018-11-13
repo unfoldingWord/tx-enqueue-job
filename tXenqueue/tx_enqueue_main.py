@@ -69,9 +69,9 @@ logger.info(f"enqueueMain.py running on Python v{sys.version}{prefix_string}")
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
 logger.info(f"redis_hostname is {redis_hostname!r}")
 # And now connect so it fails at import time if no Redis instance available
-logger.debug("tX_job_receiver() connecting to Redis...")
+logger.debug("tX_job_receiver() connecting to Redis…")
 redis_connection = StrictRedis(host=redis_hostname)
-logger.debug("Getting total worker count in order to verify working Redis connection...")
+logger.debug("Getting total worker count in order to verify working Redis connection…")
 total_rq_worker_count = Worker.count(connection=redis_connection)
 logger.debug(f"Total rq workers = {total_rq_worker_count}")
 
@@ -86,7 +86,7 @@ TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 
 
 app = Flask(__name__)
-logger.info(f"{our_adjusted_name} is up and ready to go...")
+logger.info(f"{our_adjusted_name} is up and ready to go…")
 
 
 
@@ -151,10 +151,10 @@ def job_receiver():
     response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
     # response_dict is json payload if successful, else error info
     if response_ok_flag:
-        logger.debug("tX_job_receiver processing good payload...")
+        logger.debug("tX_job_receiver processing good payload…")
 
         # Extend the given payload (dict) to add our required fields
-        #logger.debug("Building our response dict...")
+        #logger.debug("Building our response dict…")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
                             'success':'true',
