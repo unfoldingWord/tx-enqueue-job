@@ -22,7 +22,8 @@ from check_posted_tx_payload import check_posted_tx_payload #, check_posted_call
 from tx_enqueue_helpers import get_unique_job_id
 
 
-OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphite name) -- MUST match setup.py in tx-job-handler
+OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphite name)
+                        #   -- MUST match setup.py in tx-job-handler
 #CALLBACK_SUFFIX = '_callback'
 
 # NOTE: The following strings if not empty, MUST have a trailing slash but NOT a leading one.
@@ -32,6 +33,7 @@ WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '
 
 # Look at relevant environment variables
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable -- set to 'dev-' for development
+prefixed_our_name = prefix + OUR_NAME
 
 
 JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of the queue) will be considered to have failed
@@ -48,17 +50,18 @@ logger.setLevel(logging.DEBUG if prefix else logging.INFO)
 
 
 # Setup queue variables
+QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', 'dev-'):
     logger.critical(f"Unexpected prefix: {prefix!r} -- expected '' or 'dev-'")
 if prefix:
-    our_adjusted_name = prefix + OUR_NAME # Will become our main queue name
-    other_our_adjusted_name = OUR_NAME # The other queue name
+    our_adjusted_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_other_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
 else:
-    our_adjusted_name = OUR_NAME # Will become our main queue name
-    other_our_adjusted_name = 'dev-'+OUR_NAME # The other queue name
+    our_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_other_adjusted_name = 'dev-'+OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
 #our_callback_name = our_adjusted_name + CALLBACK_SUFFIX
-#other_our_adjusted_callback_name = other_our_adjusted_name + CALLBACK_SUFFIX
+#our_other_adjusted_callback_name = our_other_adjusted_name + CALLBACK_SUFFIX
 
 
 prefix_string = f" with prefix {prefix!r}" if prefix else ""
@@ -69,7 +72,7 @@ logger.info(f"enqueueMain.py running on Python v{sys.version}{prefix_string}")
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
 logger.info(f"redis_hostname is {redis_hostname!r}")
 # And now connect so it fails at import time if no Redis instance available
-logger.debug("tX_job_receiver() connecting to Redis…")
+logger.debug(f"{prefixed_our_name} connecting to Redis…")
 redis_connection = StrictRedis(host=redis_hostname)
 logger.debug("Getting total worker count in order to verify working Redis connection…")
 total_rq_worker_count = Worker.count(connection=redis_connection)
@@ -86,7 +89,7 @@ TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 
 
 app = Flask(__name__)
-logger.info(f"{our_adjusted_name} is up and ready to go…")
+logger.info(f"{prefixed_our_name} is up and ready to go…")
 
 
 
@@ -145,7 +148,7 @@ def job_receiver():
     logger.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
     stats_client.gauge('workers.available', our_queue_worker_count)
     if our_queue_worker_count < 1:
-        logger.critical(f'{our_adjusted_name} has no job handler workers running!')
+        logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
 
     response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
@@ -157,10 +160,10 @@ def job_receiver():
         #logger.debug("Building our response dict…")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
-                            'success':'true',
-                            'status':'queued',
-                            'queue_name':our_adjusted_name,
-                            'tx_job_queued_at':datetime.utcnow(),
+                            'success': 'true',
+                            'status': 'queued',
+                            'queue_name': our_adjusted_name,
+                            'tx_job_queued_at': datetime.utcnow(),
                             })
         if 'job_id' not in our_response_dict:
             our_response_dict['job_id'] = get_unique_job_id()
@@ -191,19 +194,19 @@ def job_receiver():
         #logger.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
 
         len_our_queue = len(our_queue) # Update
-        other_queue = Queue(other_our_adjusted_name, connection=redis_connection)
-        logger.info(f'{OUR_NAME} queued valid job to {our_adjusted_name} ' \
-                    f'({len_our_queue} jobs now ' \
-                        f'for {Worker.count(queue=our_queue)} workers, ' \
-                    f'{len(other_queue)} jobs in {other_our_adjusted_name} queue ' \
-                        f'for {Worker.count(queue=other_queue)} workers, ' \
-                    f'{len_our_failed_queue} failed jobs) at {datetime.utcnow()}')
+        other_queue = Queue(our_other_adjusted_name, connection=redis_connection)
+        logger.info(f"{prefixed_our_name} queued valid job to {our_adjusted_name} queue " \
+                    f"({len_our_queue} jobs now " \
+                        f"for {Worker.count(queue=our_queue)} workers, " \
+                    f"{len(other_queue)} jobs in {our_other_adjusted_name} queue " \
+                        f"for {Worker.count(queue=other_queue)} workers, " \
+                    f"{len_our_failed_queue} failed jobs) at {datetime.utcnow()}")
         stats_client.incr('posts.succeeded')
         return jsonify(our_response_dict)
     else:
         stats_client.incr('posts.invalid')
         response_dict['status'] = 'invalid'
-        logger.error(f'{OUR_NAME} ignored invalid payload; responding with {response_dict}')
+        logger.error(f"{prefixed_our_name} ignored invalid payload; responding with {response_dict}")
         return jsonify(response_dict), 400
 # end of job_receiver()
 
