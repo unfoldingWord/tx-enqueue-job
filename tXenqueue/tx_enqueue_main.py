@@ -50,7 +50,7 @@ logger.setLevel(logging.DEBUG if prefix else logging.INFO)
 
 
 # Setup queue variables
-QUEUE_NAME_SUFFIX = '_1' # Used to switch to a different queue
+QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', 'dev-'):
     logger.critical(f"Unexpected prefix: {prefix!r} -- expected '' or 'dev-'")
 if prefix:
