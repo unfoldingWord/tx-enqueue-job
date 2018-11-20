@@ -20,6 +20,7 @@ services:
   #- scripts/travis_install_apex.sh
 
 install:
+  - pip3 install --upgrade pip
   - pip3 install --requirement tXenqueue/requirements.txt
   - pip3 install coveralls
 
