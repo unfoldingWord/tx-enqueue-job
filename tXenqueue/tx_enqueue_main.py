@@ -5,7 +5,7 @@
 # TODO: We don't currently have any way to clear the failed queue
 
 # Python imports
-from os import getenv
+from os import getenv, environ
 import sys
 from datetime import datetime, timedelta
 import logging
@@ -16,6 +16,8 @@ from flask import Flask, request, jsonify
 from redis import StrictRedis
 from rq import Queue, Worker
 from statsd import StatsClient # Graphite front-end
+from boto3 import Session
+from watchtower import CloudWatchLogHandler
 
 # Local imports
 from check_posted_tx_payload import check_posted_tx_payload #, check_posted_callback_payload
@@ -40,11 +42,24 @@ JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of th
     # NOTE: This is the time until webhook.py returns after running the jobs.
 
 
+# Get the redis URL from the environment, otherwise use a local test instance
+redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
+# Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
+debug_mode_flag = redis_hostname == 'redis'
+test_string = " (TEST)" if debug_mode_flag else ""
+
+
 # Setup logging
-logger = logging.getLogger()
+logger = logging.getLogger(prefixed_our_name)
 sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
+boto3_session = Session(aws_access_key_id=environ['AWS_ACCESS_KEY_ID'],
+                        aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
+                        region_name='us-west-2')
+watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
+                    log_group=f"{prefixed_our_name}{'_TEST' if debug_mode_flag else ''}")
+logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
 
@@ -65,13 +80,11 @@ else:
 
 
 prefix_string = f" with prefix {prefix!r}" if prefix else ""
-logger.info(f"enqueueMain.py running on Python v{sys.version}{prefix_string}")
+logger.info(f"tx_enqueue_main.py {prefix_string}{test_string} running on Python v{sys.version}")
 
 
-# Get the redis URL from the environment, otherwise use a local test instance
-redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
+# Connect to Redis now so it fails at import time if no Redis instance available
 logger.info(f"redis_hostname is {redis_hostname!r}")
-# And now connect so it fails at import time if no Redis instance available
 logger.debug(f"{prefixed_our_name} connecting to Redis…")
 redis_connection = StrictRedis(host=redis_hostname)
 logger.debug("Getting total worker count in order to verify working Redis connection…")
@@ -89,6 +102,9 @@ TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 
 
 app = Flask(__name__)
+# Not sure that we need this Flask logging
+# app.logger.addHandler(watchtower_log_handler)
+# logging.getLogger('werkzeug').addHandler(watchtower_log_handler)
 logger.info(f"{prefixed_our_name} is up and ready to go…")
 
 

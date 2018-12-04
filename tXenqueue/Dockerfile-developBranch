@@ -21,7 +21,6 @@ ENV REDIS_HOSTNAME=172.20.0.2
 ENV QUEUE_PREFIX dev-
 ENV DEBUG_MODE True
 # NOTE: The following environment variables are expected to be set for testing:
-#	TX_DATABASE_PW
 #	AWS_ACCESS_KEY_ID
 #	AWS_SECRET_ACCESS_KEY
 # NOTE: The following environment variables can be set:

@@ -15,22 +15,35 @@ dependencies:
 	pip3 install --upgrade pip
 	pip3 install --requirement tXenqueue/requirements.txt
 
+# NOTE: The following environment variables are expected to be set for logging:
+#	AWS_ACCESS_KEY_ID
+#	AWS_SECRET_ACCESS_KEY
+checkEnvVariables:
+	@ if [ -z "${AWS_ACCESS_KEY_ID}" ]; then \
+		echo "Need to set AWS_ACCESS_KEY_ID"; \
+		exit 1; \
+	fi
+	@ if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then \
+		echo "Need to set AWS_SECRET_ACCESS_KEY"; \
+		exit 1; \
+	fi
+
 # NOTE: The following optional environment variables can be set:
 #	REDIS_HOSTNAME (can be omitted for testing if a local instance is running; port 6379 is assumed always)
 #	GRAPHITE_HOSTNAME (defaults to localhost if missing)
 #	QUEUE_PREFIX (set it to dev- for testing)
 #	FLASK_ENV (can be set to "development" for testing)
-test:
+test: checkEnvVariables
 	PYTHONPATH="tXenqueue/" python3 -m unittest discover -s tests/
 
-runFlask:
+runFlask: checkEnvVariables
 	# NOTE: For very preliminary testing only (unless REDIS_HOSTNAME is already set-up)
 	# This runs the enqueue process in Flask (for development/testing)
 	#   and then connect at 127.0.0.1:5000/
 	# Usually won't get far because there is often no redis instance running
 	QUEUE_PREFIX="dev-" FLASK_ENV="development" python3 tXenqueue/tx_enqueue_main.py
 
-composeEnqueueRedis:
+composeEnqueueRedis: checkEnvVariables
 	# NOTE: For testing only (using the 'dev-' prefix)
 	# This runs the tXenqueue and redis processes via nginx/gunicorn
 	#   and then connect at 127.0.0.1:8090/
@@ -38,7 +51,7 @@ composeEnqueueRedis:
 	docker-compose --file docker-compose-tXenqueue-redis.yaml build
 	docker-compose --file docker-compose-tXenqueue-redis.yaml up
 
-composeEnqueue:
+composeEnqueue: checkEnvVariables
 	# NOTE: For testing only (using the 'dev-' prefix)
 	# This runs the tXenqueue process via nginx/gunicorn
 	#   and then connect at 127.0.0.1:8090/
@@ -47,11 +60,11 @@ composeEnqueue:
 	docker-compose --file docker-compose-tXenqueue.yaml build
 	docker-compose --file docker-compose-tXenqueue.yaml up
 
-imageDev:
+imageDev: checkEnvVariables
 	# NOTE: This build sets the prefix to 'dev-' and sets debug mode
 	docker build --file tXenqueue/Dockerfile-developBranch --tag unfoldingword/tx_enqueue_job:develop tXenqueue
 
-imageMaster:
+imageMaster: checkEnvVariables
 	docker build --file tXenqueue/Dockerfile-masterBranch --tag unfoldingword/tx_enqueue_job:master tXenqueue
 
 pushDevImage:
