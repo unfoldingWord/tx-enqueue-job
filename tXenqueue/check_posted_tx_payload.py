@@ -62,11 +62,11 @@ def check_posted_tx_payload(request, logger):
 
     # NOTE: We only treat unknown types as warnings -- the job handler has the authoritative list
     if payload_json['resource_type'] not in KNOWN_RESOURCE_TYPES:
-        logger.warning(f"Unknown {payload_json['resource_type']!r} resource type in tX payload")
+        logger.warning(f"Unknown '{payload_json['resource_type']}' resource type in tX payload")
     if payload_json['input_format'] not in KNOWN_INPUT_FORMATS:
-        logger.warning(f"Unknown {payload_json['input_format']!r} input format in tX payload")
+        logger.warning(f"Unknown '{payload_json['input_format']}' input format in tX payload")
     if payload_json['output_format'] not in KNOWN_OUTPUT_FORMATS:
-        logger.warning(f"Unknown {payload_json['output_format']!r} output format in tX payload")
+        logger.warning(f"Unknown '{payload_json['output_format']}' output format in tX payload")
 
     if 'options' in payload_json:
         for some_option_fieldname in payload_json['options']:
@@ -75,13 +75,13 @@ def check_posted_tx_payload(request, logger):
 
     # Check the gogs/gitea user token
     if len(payload_json['user_token']) != 40:
-        logger.error(f"Invalid user token {payload_json['user_token']!r} in tX payload")
-        return False, {'error': f"Invalid user token {payload_json['user_token']!r}"}
+        logger.error(f"Invalid user token '{payload_json['user_token']}' in tX payload")
+        return False, {'error': f"Invalid user token '{payload_json['user_token']}'"}
     user = get_gogs_user(payload_json['user_token'])
     logger.info(f"Found Gogs user: {user}")
     if not user:
-        logger.error(f"Unknown user token {payload_json['user_token']!r} in tX payload")
-        return False, {'error': f"Unknown user token {payload_json['user_token']!r}"}
+        logger.error(f"Unknown user token '{payload_json['user_token']}' in tX payload")
+        return False, {'error': f"Unknown user token '{payload_json['user_token']}'"}
 
     logger.info("tX payload seems ok")
     return True, payload_json
