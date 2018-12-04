@@ -45,7 +45,7 @@ JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of th
 # Get the redis URL from the environment, otherwise use a local test instance
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
 # Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
-debug_mode_flag = redis_hostname == 'redis'
+debug_mode_flag = 'gogs' not in redis_hostname # Typically set to something like 172.20.0.2
 test_string = " (TEST)" if debug_mode_flag else ""
 
 
@@ -67,7 +67,7 @@ logger.setLevel(logging.DEBUG if prefix else logging.INFO)
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', 'dev-'):
-    logger.critical(f"Unexpected prefix: {prefix!r} -- expected '' or 'dev-'")
+    logger.critical(f"Unexpected prefix: '{prefix}' -- expected '' or 'dev-'")
 if prefix:
     our_adjusted_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
     our_other_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
@@ -79,12 +79,12 @@ else:
 #our_other_adjusted_callback_name = our_other_adjusted_name + CALLBACK_SUFFIX
 
 
-prefix_string = f" with prefix {prefix!r}" if prefix else ""
+prefix_string = f" with prefix '{prefix}'" if prefix else ""
 logger.info(f"tx_enqueue_main.py {prefix_string}{test_string} running on Python v{sys.version}")
 
 
 # Connect to Redis now so it fails at import time if no Redis instance available
-logger.info(f"redis_hostname is {redis_hostname!r}")
+logger.info(f"redis_hostname is '{redis_hostname}'")
 logger.debug(f"{prefixed_our_name} connecting to Redis…")
 redis_connection = StrictRedis(host=redis_hostname)
 logger.debug("Getting total worker count in order to verify working Redis connection…")
@@ -93,7 +93,7 @@ logger.debug(f"Total rq workers = {total_rq_worker_count}")
 
 # Get the Graphite URL from the environment, otherwise use a local test instance
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
-logger.info(f"graphite_url is {graphite_url!r}")
+logger.info(f"graphite_url is '{graphite_url}'")
 stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
