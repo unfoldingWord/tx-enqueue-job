@@ -54,7 +54,8 @@ logger = logging.getLogger(prefixed_our_name)
 sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
-boto3_session = Session(aws_access_key_id=environ['AWS_ACCESS_KEY_ID'],
+aws_access_key_id = environ['AWS_ACCESS_KEY_ID']
+boto3_session = Session(aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
                         region_name='us-west-2')
 log_group_name = f"{prefixed_our_name}{'_DEBUG' if debug_mode_flag else ''}" \
@@ -65,7 +66,7 @@ watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
 logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
-logger.info(f"Logging to AWS CloudWatch group '{log_group_name}'.")
+logger.info(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 
 # Setup queue variables
