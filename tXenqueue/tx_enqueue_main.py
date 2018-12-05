@@ -5,7 +5,7 @@
 # TODO: We don't currently have any way to clear the failed queue
 
 # Python imports
-from os import getenv
+from os import getenv, environ
 import sys
 from datetime import datetime, timedelta
 import logging
@@ -16,6 +16,8 @@ from flask import Flask, request, jsonify
 from redis import StrictRedis
 from rq import Queue, Worker
 from statsd import StatsClient # Graphite front-end
+from boto3 import Session
+from watchtower import CloudWatchLogHandler
 
 # Local imports
 from check_posted_tx_payload import check_posted_tx_payload #, check_posted_callback_payload
@@ -40,19 +42,41 @@ JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of th
     # NOTE: This is the time until webhook.py returns after running the jobs.
 
 
+# Get the redis URL from the environment, otherwise use a local test instance
+redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
+# Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
+debug_mode_flag = 'gogs' not in redis_hostname # Typically set to something like 172.20.0.2
+test_string = " (TEST)" if debug_mode_flag else ""
+
+
 # Setup logging
-logger = logging.getLogger()
+logger = logging.getLogger(prefixed_our_name)
 sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
+aws_access_key_id = environ['AWS_ACCESS_KEY_ID']
+boto3_session = Session(aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
+                        region_name='us-west-2')
+test_mode_flag = getenv('TEST_MODE', '')
+travis_flag = getenv('TRAVIS_BRANCH', '')
+log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
+                 f"{'_DEBUG' if debug_mode_flag else ''}" \
+                 f"{'_TEST' if test_mode_flag else ''}" \
+                 f"{'_TravisCI' if travis_flag else ''}"
+watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
+                                              log_group=log_group_name,
+                                              stream_name=prefixed_our_name)
+logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
+logger.info(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', 'dev-'):
-    logger.critical(f"Unexpected prefix: {prefix!r} -- expected '' or 'dev-'")
+    logger.critical(f"Unexpected prefix: '{prefix}' -- expected '' or 'dev-'")
 if prefix:
     our_adjusted_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
     our_other_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
@@ -64,14 +88,12 @@ else:
 #our_other_adjusted_callback_name = our_other_adjusted_name + CALLBACK_SUFFIX
 
 
-prefix_string = f" with prefix {prefix!r}" if prefix else ""
-logger.info(f"enqueueMain.py running on Python v{sys.version}{prefix_string}")
+prefix_string = f" with prefix '{prefix}'" if prefix else ""
+logger.info(f"tx_enqueue_main.py {prefix_string}{test_string} running on Python v{sys.version}")
 
 
-# Get the redis URL from the environment, otherwise use a local test instance
-redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
-logger.info(f"redis_hostname is {redis_hostname!r}")
-# And now connect so it fails at import time if no Redis instance available
+# Connect to Redis now so it fails at import time if no Redis instance available
+logger.info(f"redis_hostname is '{redis_hostname}'")
 logger.debug(f"{prefixed_our_name} connecting to Redis…")
 redis_connection = StrictRedis(host=redis_hostname)
 logger.debug("Getting total worker count in order to verify working Redis connection…")
@@ -80,7 +102,7 @@ logger.debug(f"Total rq workers = {total_rq_worker_count}")
 
 # Get the Graphite URL from the environment, otherwise use a local test instance
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
-logger.info(f"graphite_url is {graphite_url!r}")
+logger.info(f"graphite_url is '{graphite_url}'")
 stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
@@ -89,6 +111,9 @@ TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 
 
 app = Flask(__name__)
+# Not sure that we need this Flask logging
+# app.logger.addHandler(watchtower_log_handler)
+# logging.getLogger('werkzeug').addHandler(watchtower_log_handler)
 logger.info(f"{prefixed_our_name} is up and ready to go…")
 
 
