@@ -59,10 +59,11 @@ boto3_session = Session(aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
                         region_name='us-west-2')
 test_mode_flag = getenv('TEST_MODE', '')
-log_group_name = f"{'' if test_mode_flag else prefix}tX" \
+travis_flag = getenv('TRAVIS_BRANCH', '')
+log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
                  f"{'_DEBUG' if debug_mode_flag else ''}" \
                  f"{'_TEST' if test_mode_flag else ''}" \
-                 f"{'_TravisCI' if getenv('TRAVIS_BRANCH', '') else ''}"
+                 f"{'_TravisCI' if travis_flag else ''}"
 watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
                                               log_group=log_group_name,
                                               stream_name=prefixed_our_name)
