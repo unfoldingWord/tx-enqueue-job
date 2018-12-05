@@ -34,7 +34,7 @@ checkEnvVariables:
 #	QUEUE_PREFIX (set it to dev- for testing)
 #	FLASK_ENV (can be set to "development" for testing)
 test: checkEnvVariables
-	PYTHONPATH="tXenqueue/" python3 -m unittest discover -s tests/
+	TEST_MODE="TEST" PYTHONPATH="tXenqueue/" python3 -m unittest discover -s tests/
 
 runFlask: checkEnvVariables
 	# NOTE: For very preliminary testing only (unless REDIS_HOSTNAME is already set-up)
@@ -60,11 +60,11 @@ composeEnqueue: checkEnvVariables
 	docker-compose --file docker-compose-tXenqueue.yaml build
 	docker-compose --file docker-compose-tXenqueue.yaml up
 
-imageDev: checkEnvVariables
+imageDev:
 	# NOTE: This build sets the prefix to 'dev-' and sets debug mode
 	docker build --file tXenqueue/Dockerfile-developBranch --tag unfoldingword/tx_enqueue_job:develop tXenqueue
 
-imageMaster: checkEnvVariables
+imageMaster:
 	docker build --file tXenqueue/Dockerfile-masterBranch --tag unfoldingword/tx_enqueue_job:master tXenqueue
 
 pushDevImage:
