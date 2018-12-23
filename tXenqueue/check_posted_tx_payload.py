@@ -13,7 +13,10 @@ OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
 
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
-KNOWN_RESOURCE_TYPES = 'bible', 'obs', 'ta', 'tn', 'tq', 'tw', 'ult', 'ust', 'ugnt', 'uhb', 'ulb'
+KNOWN_RESOURCE_TYPES = ( 'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
+                'Translation_Academy', 'Translation_Notes', 'Translation_Questions', 'Translation_Words',
+                'Open_Bible_Stories', 'OBS_Translation_Notes', 'OBS_Translation_Questions',
+                'bible', 'book', 'obs', 'ta', 'tn', 'tq', 'tw', )
 KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt'
 KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
 
