@@ -5,6 +5,7 @@
 from tx_enqueue_helpers import get_gogs_user
 
 
+# NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 COMPULSORY_FIELDNAMES = 'job_id', 'user_token', \
                 'resource_type', 'input_format', 'output_format', 'source'
 OPTIONAL_FIELDNAMES = 'callback', 'identifier', 'options', 'door43_webhook_received_at'
@@ -12,12 +13,12 @@ ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
 OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
 
-# NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 KNOWN_RESOURCE_TYPES = ( 'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
-                'Translation_Academy', 'Translation_Notes', 'Translation_Questions', 'Translation_Words',
-                'Open_Bible_Stories', 'OBS_Translation_Notes', 'OBS_Translation_Questions',
-                'bible', 'book', 'obs', 'ta', 'tn', 'tq', 'tw', )
-KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt'
+            'Translation_Academy', 'Translation_Notes', 'Translation_Questions', 'Translation_Words',
+            'Open_Bible_Stories', 'OBS_Translation_Notes', 'OBS_Translation_Questions',
+            ) # from https://api.door43.org/v3/subjects
+            # A similar table also exists in door43-job-handler:webhook.py
+KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt', 'tsv',
 KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
 
 
