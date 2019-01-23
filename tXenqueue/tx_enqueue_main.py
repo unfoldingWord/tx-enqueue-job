@@ -38,7 +38,7 @@ prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment v
 prefixed_our_name = prefix + OUR_NAME
 
 
-JOB_TIMEOUT = '360s' if prefix else '240s' # Then a running job (taken out of the queue) will be considered to have failed
+JOB_TIMEOUT = '400s' if prefix else '300s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
 
 
