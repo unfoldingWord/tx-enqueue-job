@@ -13,10 +13,13 @@ ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
 OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
 
-KNOWN_RESOURCE_TYPES = ( 'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
+KNOWN_RESOURCE_SUBJECTS = ('Generic_Markdown',
+            'Greek_Lexicon', 'Hebrew_Lexicon',
+            # and from https://api.door43.org/v3/subjects:
+            'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
             'Translation_Academy', 'Translation_Notes', 'Translation_Questions', 'Translation_Words',
             'Open_Bible_Stories', 'OBS_Translation_Notes', 'OBS_Translation_Questions',
-            ) # from https://api.door43.org/v3/subjects
+            )
             # A similar table also exists in door43-job-handler:webhook.py
 KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt', 'tsv',
 KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
@@ -65,7 +68,7 @@ def check_posted_tx_payload(request, logger):
         return False, {'error': ', '.join(error_list)}
 
     # NOTE: We only treat unknown types as warnings -- the job handler has the authoritative list
-    if payload_json['resource_type'] not in KNOWN_RESOURCE_TYPES:
+    if payload_json['resource_type'] not in KNOWN_RESOURCE_SUBJECTS:
         logger.warning(f"Unknown '{payload_json['resource_type']}' resource type in tX payload")
     if payload_json['input_format'] not in KNOWN_INPUT_FORMATS:
         logger.warning(f"Unknown '{payload_json['input_format']}' input format in tX payload")
