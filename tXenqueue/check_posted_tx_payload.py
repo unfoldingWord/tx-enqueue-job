@@ -14,7 +14,7 @@ OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
 
 KNOWN_RESOURCE_SUBJECTS = ('Generic_Markdown',
-            'Greek_Lexicon', 'Hebrew_Lexicon',
+            'Greek_Lexicon', 'Hebrew_Aramaic_Lexicon',
             # and from https://api.door43.org/v3/subjects:
             'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
             'Translation_Academy', 'Translation_Notes', 'Translation_Questions', 'Translation_Words',
