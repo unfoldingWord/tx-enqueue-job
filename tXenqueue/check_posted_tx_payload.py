@@ -17,7 +17,8 @@ KNOWN_RESOURCE_SUBJECTS = ('Generic_Markdown',
             'Greek_Lexicon', 'Hebrew_Aramaic_Lexicon',
             # and from https://api.door43.org/v3/subjects:
             'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
-            'Translation_Academy', 'Translation_Notes', 'Translation_Questions', 'Translation_Words',
+            'Translation_Academy', 'Translation_Questions', 'Translation_Words',
+            'Translation_Notes', 'TSV_Translation_Notes',
             'Open_Bible_Stories', 'OBS_Translation_Notes', 'OBS_Translation_Questions',
             )
             # A similar table also exists in door43-job-handler:webhook.py
