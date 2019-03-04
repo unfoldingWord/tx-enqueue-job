@@ -142,7 +142,7 @@ def handle_failed_queue(our_queue_name):
     if len_our_failed_queue:
         logger.info(f"Have {len_our_failed_queue} of our jobs in failed queue")
     return len_our_failed_queue
-# end of function handle_failed_queue
+# end of handle_failed_queue function
 
 
 # This is the main workhorse part of this code
