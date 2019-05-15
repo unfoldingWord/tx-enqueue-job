@@ -185,7 +185,7 @@ def job_receiver():
         #logger.debug("Building our response dict…")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
-                            'success': 'true',
+                            'success': True,
                             'status': 'queued',
                             'queue_name': our_adjusted_name,
                             'tx_job_queued_at': datetime.utcnow(),
