@@ -80,7 +80,7 @@ from redis import exceptions as redis_exceptions
             ##self.assertEqual(response.status_code, 200)
             ##self.assertEqual(response.headers['Content-Type'], 'application/json' )
             ##response_dict = json.loads(response.data)
-            ##self.assertEqual(response_dict['success'], 'true')
+            ##self.assertEqual(response_dict['success'], True)
             ##self.assertEqual(response_dict['status'], 'queued')
 
     ##def test_webhook_with_typical_full_json_payload(self):
