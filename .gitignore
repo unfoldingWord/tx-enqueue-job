@@ -46,6 +46,9 @@ coverage.xml
 *.cover
 .hypothesis/
 
+# Editors
+.vscode/
+
 # Translations
 *.mo
 *.pot
