@@ -1,6 +1,6 @@
-Flask==1.0.2
+Flask==1.0.3
 rq==1.0
 gunicorn==19.9.0
 statsd==3.3.0
-watchtower==0.5.5
+watchtower==0.6.0
 gogs_client==1.0.6
