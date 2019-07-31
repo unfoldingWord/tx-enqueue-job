@@ -42,11 +42,6 @@ def check_posted_tx_payload(request, logger):
         logger.error("Received request but no payload found")
         return False, {'error': 'No payload found. You must submit a POST request'}
 
-    # TODO: Should we check any headers ???
-    #if 'X-Gogs-Event' not in request.headers:
-        #logger.error(f"Cannot find 'X-Gogs-Event' in {request.headers}")
-        #return False, {'error': 'This does not appear to be from DCS.'}
-
     # Get the json payload and check it
     payload_json = request.get_json()
     logger.info(f"tX payload is {payload_json}")
