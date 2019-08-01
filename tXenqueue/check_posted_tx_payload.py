@@ -46,7 +46,12 @@ def check_posted_tx_payload(request, logger):
     payload_json = request.get_json()
     logger.info(f"tX payload is {payload_json}")
 
-    # Check for existance of unknown fieldnames
+    if not payload_json:
+        logger.error(f"Empty payload with headers: {request.headers}")
+        # Could be a ping
+        return False, {'error': "Is this a ping for testing?"}
+
+    # Check for existence of unknown fieldnames
     for some_fieldname in payload_json:
         if some_fieldname not in ALL_FIELDNAMES:
             logger.warning(f'Unexpected {some_fieldname} field in tX payload')
