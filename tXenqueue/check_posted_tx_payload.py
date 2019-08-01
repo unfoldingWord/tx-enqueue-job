@@ -46,17 +46,17 @@ def check_posted_tx_payload(request, logger):
     payload_json = request.get_json()
     logger.info(f"tX payload is {payload_json}")
 
-    if not payload_json:
-        logger.error(f"Empty payload with headers: {request.headers}")
-        # Could be a ping
-        return False, {'error': "Is this a ping for testing?"}
+    # Check for a test ping from Nagios
+    if 'User-Agent' in request.headers and 'nagios-plugins' in request.headers['User-Agent'] \
+    and not payload_json:
+        return False, {'error': "This appears to be a Nagios ping for service availability testing."}
 
-    # Check for existence of unknown fieldnames
+    # Warn on existence of unknown fieldnames (just makes interface debugging easier)
     for some_fieldname in payload_json:
         if some_fieldname not in ALL_FIELDNAMES:
             logger.warning(f'Unexpected {some_fieldname} field in tX payload')
 
-    # Check for existence of compulsory fieldnames
+    # Issue errors for non-existence of compulsory fieldnames and abort
     error_list = []
     for compulsory_fieldname in COMPULSORY_FIELDNAMES:
         if compulsory_fieldname not in payload_json:
@@ -68,7 +68,7 @@ def check_posted_tx_payload(request, logger):
     if error_list:
         return False, {'error': ', '.join(error_list)}
 
-    # NOTE: We only treat unknown types as warnings -- the job handler has the authoritative list
+    # NOTE: We only treat unknown values as warnings -- the job handler has the authoritative list
     if payload_json['resource_type'] not in KNOWN_RESOURCE_SUBJECTS:
         logger.warning(f"Unknown '{payload_json['resource_type']}' resource type in tX payload")
     if payload_json['input_format'] not in KNOWN_INPUT_FORMATS:
