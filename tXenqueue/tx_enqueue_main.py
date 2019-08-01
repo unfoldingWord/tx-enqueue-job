@@ -225,13 +225,13 @@ def job_receiver():
                         f"for {Worker.count(queue=our_queue)} workers, " \
                     f"{len(other_queue)} jobs in {our_other_adjusted_name} queue " \
                         f"for {Worker.count(queue=other_queue)} workers, " \
-                    f"{len_our_failed_queue} failed jobs) at {datetime.utcnow()}")
+                    f"{len_our_failed_queue} failed jobs) at {datetime.utcnow()}\n")
         stats_client.incr('posts.succeeded')
         return jsonify(our_response_dict)
     else:
         stats_client.incr('posts.invalid')
         response_dict['status'] = 'invalid'
-        logger.error(f"{prefixed_our_name} ignored invalid payload; responding with {response_dict}")
+        logger.error(f"{prefixed_our_name} ignored invalid payload; responding with {response_dict}\n")
         return jsonify(response_dict), 400
 # end of job_receiver()
 
