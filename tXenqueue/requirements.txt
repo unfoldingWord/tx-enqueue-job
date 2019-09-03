@@ -2,5 +2,5 @@ Flask==1.1.1
 rq==1.1.0
 gunicorn==19.9.0
 statsd==3.3.0
-watchtower==0.6.0
+watchtower==0.7.3
 gogs_client==1.0.6
