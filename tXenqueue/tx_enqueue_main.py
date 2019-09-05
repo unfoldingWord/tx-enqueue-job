@@ -27,6 +27,7 @@ from tx_enqueue_helpers import get_unique_job_id
 OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphite name)
                         #   -- MUST match setup.py in tx-job-handler
 #CALLBACK_SUFFIX = '_callback'
+DEV_PREFIX = 'dev-'
 
 # NOTE: The following strings if not empty, MUST have a trailing slash but NOT a leading one.
 WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '/'
@@ -75,14 +76,14 @@ logger.info(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{
 
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
-if prefix not in ('', 'dev-'):
-    logger.critical(f"Unexpected prefix: '{prefix}' -- expected '' or 'dev-'")
+if prefix not in ('', DEV_PREFIX):
+    logger.critical(f"Unexpected prefix: '{prefix}' -- expected '' or '{DEV_PREFIX}'")
 if prefix:
     our_adjusted_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
     our_other_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
 else:
     our_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_other_adjusted_name = 'dev-'+OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_name = DEV_PREFIX + OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
 #our_callback_name = our_adjusted_name + CALLBACK_SUFFIX
 #our_other_adjusted_callback_name = our_other_adjusted_name + CALLBACK_SUFFIX

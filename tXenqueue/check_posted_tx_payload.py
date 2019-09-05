@@ -86,7 +86,7 @@ def check_posted_tx_payload(request, logger):
         logger.error(f"Invalid user token '{payload_json['user_token']}' in tX payload")
         return False, {'error': f"Invalid user token '{payload_json['user_token']}'"}
     user = get_gogs_user(payload_json['user_token'])
-    logger.info(f"Found Gogs user: {user}")
+    logger.info(f"Found Gitea user: {user}")
     if not user:
         logger.error(f"Unknown user token '{payload_json['user_token']}' in tX payload")
         return False, {'error': f"Unknown user token '{payload_json['user_token']}'"}
