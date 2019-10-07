@@ -1,4 +1,5 @@
 # To handle packaging error 7 Oct 2019
+# (This works on my system on docker -- why doesn't it work on AWS???)
 attrs==19.1.0
 
 Flask==1.1.1
