@@ -71,7 +71,7 @@ watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
 logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
-logger.info(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
+logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 
 # Setup queue variables
