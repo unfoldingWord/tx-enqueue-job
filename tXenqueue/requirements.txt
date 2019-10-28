@@ -1,5 +1,6 @@
 # To handle packaging error 7 Oct 2019
-# (This works on my system on docker -- why doesn't it work on AWS???)
+#   when attrs removed deprecated attribute 'convert' used by gogs_client
+# Why do we only need this on tx-enqueue (and not door43-job-handler)???
 attrs==19.1.0
 
 Flask==1.1.1
