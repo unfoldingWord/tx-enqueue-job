@@ -81,3 +81,11 @@ pushMasterImage:
 
 # NOTE: To run the container in production use with the desired values:
 # 	docker run --env GRAPHITE_HOSTNAME=<graphite_hostname> --env REDIS_HOSTNAME=<redis_hostname> --net="host" --name tx_enqueue_job --rm tx_enqueue_job
+
+connect:
+	# Gives a shell on the running container -- Note: no bash shell available
+	docker exec -it `docker inspect --format="{{.Id}}" tx_enqueue_job` sh
+
+connectDev:
+	# Gives a shell on the running container -- Note: no bash shell available
+	docker exec -it `docker inspect --format="{{.Id}}" dev-tx_enqueue_job` sh

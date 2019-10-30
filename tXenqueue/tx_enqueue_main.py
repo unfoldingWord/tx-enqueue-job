@@ -71,7 +71,7 @@ watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
 logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
-logger.info(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
+logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 
 # Setup queue variables
@@ -90,7 +90,7 @@ else:
 
 
 prefix_string = f" with prefix '{prefix}'" if prefix else ""
-logger.info(f"tx_enqueue_main.py {prefix_string}{test_string} running on Python v{sys.version}")
+logger.info(f"tx_enqueue_main.py{prefix_string}{test_string} running on Python v{sys.version}")
 
 
 # Connect to Redis now so it fails at import time if no Redis instance available
