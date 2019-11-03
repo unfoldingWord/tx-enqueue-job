@@ -102,7 +102,6 @@ ENV/
 /site
 
 # mypy
-mypy.ini
 .mypy_cache/
 
 # MonkeyType
