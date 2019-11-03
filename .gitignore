@@ -102,8 +102,15 @@ ENV/
 /site
 
 # mypy
+mypy.ini
 .mypy_cache/
+
+# MonkeyType
+monkeytype.sqlite3
 
 # Sonar
 sonar-project.properties
 .scannerwork/
+
+# Script to set environment variables
+setENVs.sh
