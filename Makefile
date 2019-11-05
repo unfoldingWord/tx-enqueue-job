@@ -34,6 +34,7 @@ checkEnvVariables:
 #	QUEUE_PREFIX (set it to dev- for testing)
 #	FLASK_ENV (can be set to "development" for testing)
 test: checkEnvVariables
+	mypy tXenqueue/
 	TEST_MODE="TEST" PYTHONPATH="tXenqueue/" python3 -m unittest discover -s tests/
 
 runFlask: checkEnvVariables

@@ -8,8 +8,8 @@ dist: xenial
 language: python
 # See available versions at https://docs.travis-ci.com/user/languages/python/
 python:
-  - '3.7'
-  - '3.8-dev'
+  - '3.8'
+  - 'nightly'
 # NOTE: We only deploy on ONE of these tests being successful -- see condition below
 
 services:
@@ -23,11 +23,13 @@ install:
   - pip3 install --upgrade pip
   - pip3 install --requirement tXenqueue/requirements.txt
   - pip3 install coveralls
+  - pip3 install mypy
 
 # Run the tests first
 #  and if they succeed, make the docker image(s)
 #   (and check that both succeed)
 script:
+  - mypy tXenqueue/
   - PYTHONPATH="tXenqueue/" coverage run -m unittest discover -s tests/
 
 # Only execute the following instructions in the case of a success
@@ -49,10 +51,10 @@ deploy:
     script: bash ./deploy.sh develop
     on:
       branch: develop
-      condition: $TRAVIS_PYTHON_VERSION == '3.7'
+      condition: $TRAVIS_PYTHON_VERSION == '3.8'
   - provider: script
     skip_cleanup: true
     script: bash ./deploy.sh master
     on:
       branch: master
-      condition: $TRAVIS_PYTHON_VERSION == '3.7'
+      condition: $TRAVIS_PYTHON_VERSION == '3.8'
