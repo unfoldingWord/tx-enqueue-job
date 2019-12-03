@@ -1,11 +1,10 @@
 # To handle packaging error 7 Oct 2019
 #   when attrs removed deprecated attribute 'convert' used by gogs_client
-# Why do we only need this on tx-enqueue (and not door43-job-handler)???
 attrs==19.1.0
 
 Flask==1.1.1
 rq==1.1.0
-gunicorn==19.9.0
+gunicorn==20.0.4
 statsd==3.3.0
 watchtower==0.7.3
 gogs_client==1.0.6
