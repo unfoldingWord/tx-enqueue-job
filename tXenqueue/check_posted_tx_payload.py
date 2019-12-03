@@ -1,7 +1,8 @@
 # This code adapted by RJH Sept 2018 from door43-enqueue-job
 #       and from tx-manager/client_webhook/ClientWebhookHandler
 
-# Local imports
+from typing import Dict, Tuple, Any
+
 from tx_enqueue_helpers import get_gogs_user
 
 
@@ -26,7 +27,7 @@ KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt', 'tsv',
 KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
 
 
-def check_posted_tx_payload(request, logger):
+def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
     """
     Accepts POSTed conversion request.
         Parameter is a rq request object
