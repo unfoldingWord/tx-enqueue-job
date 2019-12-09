@@ -16,11 +16,12 @@ OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
 
 KNOWN_RESOURCE_SUBJECTS = ('Generic_Markdown',
             'Greek_Lexicon', 'Hebrew-Aramaic_Lexicon',
-            # and from https://api.door43.org/v3/subjects:
+            # and 14 from https://api.door43.org/v3/subjects (last checked 10 Dec 2019)
             'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
             'Translation_Academy', 'Translation_Questions', 'Translation_Words',
             'Translation_Notes', 'TSV_Translation_Notes',
-            'Open_Bible_Stories', 'OBS_Translation_Notes', 'OBS_Translation_Questions',
+            'Open_Bible_Stories', 'OBS_Study_Notes', 'OBS_Study_Questions',
+                                'OBS_Translation_Notes', 'OBS_Translation_Questions',
             )
             # A similar table also exists in door43-job-handler:webhook.py
 KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt', 'tsv',
