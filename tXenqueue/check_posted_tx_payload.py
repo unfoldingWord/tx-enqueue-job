@@ -83,7 +83,7 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
             if some_option_fieldname not in OPTION_SUBFIELDNAMES:
                 logger.warning(f'Unexpected {some_option_fieldname} option field in tX payload')
 
-    # Check the gogs/gitea user token
+    # Check the Gogs/Gitea user token
     if len(payload_json['user_token']) != 40:
         logger.error(f"Invalid user token '{payload_json['user_token']}' in tX payload")
         return False, {'error': f"Invalid user token '{payload_json['user_token']}'"}

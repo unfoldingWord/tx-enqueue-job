@@ -4,6 +4,39 @@
 
 # TODO: We don't currently have any way to clear the failed queue
 
+"""
+tX Enqueue Main
+
+Accepts a JSON payload to start a lint and convert process.
+    check_posted_tx_payload.py does most of the payload content checking.
+
+Expected JSON payload:
+    job_id: any string to identify this particular job to the caller
+    identifier: optional -- any human readable string to help identify this particular job
+    user_token: A 40-character Door43 Gogs/Gitea user token
+    resource_type: one of 17 (as at Jan2020) strings to identify the input type
+                            e.g., 'OBS_Study_Notes' with underlines not spaces.
+    input_format: input file(s) format -- one of 'md', 'usfm', 'txt', 'tsv'.
+    output_format: desired output format -- one of 'docx', 'html', 'pdf'.
+    source: url of zip file containing the input files.
+    callback: optional url of callback function to be notified upon completion.
+    options: optional dict of option parameters (depending on output_format).
+
+If the payload parses successfully, a response dict is created and added to the job queue.
+
+The same response dict is immediately returned as a response to the caller:
+
+Response JSON: Contains all of the given fields from the payload, plus
+    success: True to indicate that the job was queued
+    status: 'queued'
+    queue_name: 'tX_webhook' or 'dev-tX_webhook'
+    tx_job_queued_at: current date & time
+    output: URL of zipfile where converted output will be able to be downloaded from
+    expires_at: date & time when above output link may become invalid (one day later)
+    eta: date & time when output is expected (5 minutes later)
+    tx_retry_count: 0
+"""
+
 # Python imports
 from os import getenv, environ
 import sys
@@ -119,7 +152,7 @@ logger.info(f"{prefixed_our_name} is up and ready to go…")
 
 
 
-def handle_failed_queue(our_queue_name):
+def handle_failed_queue(our_queue_name:str) -> int:
     """
     Go through the failed queue, and see how many entries originated from our queue.
 
