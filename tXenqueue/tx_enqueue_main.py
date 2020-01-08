@@ -7,7 +7,7 @@
 """
 tX Enqueue Main
 
-Accepts a JSON payload to start a lint and convert process.
+Accepts a JSON payload to start a convert (and in most cases, lint) process.
     check_posted_tx_payload.py does most of the payload content checking.
 
 Expected JSON payload:
@@ -17,24 +17,23 @@ Expected JSON payload:
     resource_type: one of 17 (as at Jan2020) strings to identify the input type
                             e.g., 'OBS_Study_Notes' with underlines not spaces.
     input_format: input file(s) format -- one of 'md', 'usfm', 'txt', 'tsv'.
-    output_format: desired output format -- one of 'docx', 'html', 'pdf'.
+    output_format: desired output format -- one of 'html', 'pdf', or eventually 'docx'.
     source: url of zip file containing the input files.
     callback: optional url of callback function to be notified upon completion.
     options: optional dict of option parameters (depending on output_format).
 
 If the payload parses successfully, a response dict is created and added to the job queue.
 
-The same response dict is immediately returned as a response to the caller:
-
-Response JSON: Contains all of the given fields from the payload, plus
-    success: True to indicate that the job was queued
-    status: 'queued'
-    queue_name: 'tX_webhook' or 'dev-tX_webhook'
-    tx_job_queued_at: current date & time
-    output: URL of zipfile where converted output will be able to be downloaded from
-    expires_at: date & time when above output link may become invalid (one day later)
-    eta: date & time when output is expected (5 minutes later)
-    tx_retry_count: 0
+A JSON response dict is immediately returned as a response to the caller:
+    Response JSON: Contains all of the given fields from the payload, plus
+        success: True to indicate that the job was queued
+        status: 'queued'
+        queue_name: '(dev-)tX_webhook' or '(dev-)tX_PDF_webhook'
+        tx_job_queued_at: current date & time
+        output: URL of zipfile or PDF where converted output will be able to be downloaded from
+        expires_at: date & time when above output link may become invalid (one day later)
+        eta: date & time when output is expected (5 minutes later)
+        tx_retry_count: 0
 """
 
 # Python imports
@@ -57,8 +56,9 @@ from check_posted_tx_payload import check_posted_tx_payload #, check_posted_call
 from tx_enqueue_helpers import get_unique_job_id
 
 
-OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphite name)
+OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) HTML queue name (and graphite name)
                         #   -- MUST match setup.py in tx-job-handler
+OUR_PDF_NAME = 'tX_PDF_webhook'
 #CALLBACK_SUFFIX = '_callback'
 DEV_PREFIX = 'dev-'
 
@@ -112,14 +112,18 @@ QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', DEV_PREFIX):
     logger.critical(f"Unexpected prefix: '{prefix}' -- expected '' or '{DEV_PREFIX}'")
 if prefix:
-    our_adjusted_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_other_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_adjusted_convertHTML_queue_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_adjusted_convertPDF_queue_name = prefix + OUR_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_other_adjusted_convertHTML_queue_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_convertPDF_queue_name = OUR_PDF_NAME + QUEUE_NAME_SUFFIX # The other queue name
 else:
-    our_adjusted_name = OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_other_adjusted_name = DEV_PREFIX + OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_adjusted_convertHTML_queue_name = OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_adjusted_convertPDF_queue_name = OUR_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_other_adjusted_convertHTML_queue_name = DEV_PREFIX + OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_convertPDF_queue_name = DEV_PREFIX + OUR_PDF_NAME + QUEUE_NAME_SUFFIX # The other queue name
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
-#our_callback_name = our_adjusted_name + CALLBACK_SUFFIX
-#our_other_adjusted_callback_name = our_other_adjusted_name + CALLBACK_SUFFIX
+#our_callback_name = our_adjusted_convertHTML_queue_name + CALLBACK_SUFFIX
+#our_other_adjusted_callback_name = our_other_adjusted_convertHTML_queue_name + CALLBACK_SUFFIX
 
 
 prefix_string = f" with prefix '{prefix}'" if prefix else ""
@@ -187,26 +191,37 @@ def job_receiver():
     Accepts POST requests and checks the (json) payload
 
     Queues the approved jobs at redis instance at global redis_hostname:6379.
-    Queue name is our_adjusted_name (may have been prefixed).
+    Queue name is our_adjusted_convertHTML_queue_name (may have been prefixed).
     """
     #assert request.method == 'POST'
     stats_client.incr('posts.attempted')
     logger.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
 
     # Collect and log some helpful information
-    our_queue = Queue(our_adjusted_name, connection=redis_connection)
-    len_our_queue = len(our_queue)
-    stats_client.gauge('queue.length.current', len_our_queue)
-    len_our_failed_queue = handle_failed_queue(our_adjusted_name)
-    stats_client.gauge('webhook.queue.length.failed', len_our_failed_queue)
+    HTML_queue = Queue(our_adjusted_convertHTML_queue_name, connection=redis_connection)
+    len_HTML_queue = len(HTML_queue)
+    stats_client.gauge('HTML.queue.length.current', len_HTML_queue)
+    len_HTML_failed_queue = handle_failed_queue(our_adjusted_convertHTML_queue_name)
+    stats_client.gauge('HTML.queue.length.failed', len_HTML_failed_queue)
+    PDF_queue = Queue(our_adjusted_convertPDF_queue_name, connection=redis_connection)
+    len_PDF_queue = len(PDF_queue)
+    stats_client.gauge('PDF.queue.length.current', len_PDF_queue)
+    len_PDF_failed_queue = handle_failed_queue(our_adjusted_convertPDF_queue_name)
+    stats_client.gauge('PDF.queue.length.failed', len_PDF_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
     logger.debug(f"Total rq workers = {total_worker_count}")
-    our_queue_worker_count = Worker.count(queue=our_queue)
-    logger.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
-    stats_client.gauge('workers.available', our_queue_worker_count)
-    if our_queue_worker_count < 1:
+    queue1_worker_count = Worker.count(queue=HTML_queue)
+    logger.debug(f"Our {our_adjusted_convertHTML_queue_name} queue workers = {queue1_worker_count}")
+    stats_client.gauge('HTML.workers.available', queue1_worker_count)
+    if queue1_worker_count < 1:
+        logger.critical(f"{prefixed_our_name} has no job handler workers running!")
+        # Go ahead and queue the job anyway for when a worker is restarted
+    queue2_worker_count = Worker.count(queue=HTML_queue)
+    logger.debug(f"Our {our_adjusted_convertPDF_queue_name} queue workers = {queue2_worker_count}")
+    stats_client.gauge('PDF.workers.available', queue2_worker_count)
+    if queue2_worker_count < 1:
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
 
@@ -215,13 +230,28 @@ def job_receiver():
     if response_ok_flag:
         logger.debug("tX_job_receiver processing good payload…")
 
+        if response_dict['output_format'] == 'html':
+            job_type, not_job_type = 'HTML', 'PDF'
+            our_adjusted_queue_name = our_adjusted_convertHTML_queue_name
+            our_other_adjusted_queue_name = our_other_adjusted_convertHTML_queue_name
+            our_adjusted_queue_name2 = our_adjusted_convertPDF_queue_name
+            our_other_adjusted_queue_name2 = our_other_adjusted_convertPDF_queue_name
+            our_queue = HTML_queue
+        elif response_dict['output_format'] == 'pdf':
+            job_type, not_job_type = 'PDF', 'HTML'
+            our_adjusted_queue_name = our_adjusted_convertPDF_queue_name
+            our_other_adjusted_queue_name = our_other_adjusted_convertPDF_queue_name
+            our_adjusted_queue_name2 = our_adjusted_convertHTML_queue_name
+            our_other_adjusted_queue_name2 = our_other_adjusted_convertHTML_queue_name
+            our_queue = PDF_queue
+
         # Extend the given payload (dict) to add our required fields
         #logger.debug("Building our response dict…")
         our_response_dict = dict(response_dict)
         our_response_dict.update({ \
                             'success': True,
                             'status': 'queued',
-                            'queue_name': our_adjusted_name,
+                            'queue_name': our_adjusted_queue_name,
                             'tx_job_queued_at': datetime.utcnow(),
                             })
         if 'job_id' not in our_response_dict:
@@ -232,7 +262,7 @@ def job_receiver():
         our_response_dict['expires_at'] = our_response_dict['tx_job_queued_at'] + timedelta(days=1)
         our_response_dict['eta'] = our_response_dict['tx_job_queued_at'] + timedelta(minutes=5)
         our_response_dict['tx_retry_count'] = 0
-        logger.debug(f"About to queue job: {our_response_dict}")
+        logger.debug(f"About to queue {job_type} job: {our_response_dict}")
 
         # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
@@ -244,22 +274,27 @@ def job_receiver():
         #workers = Worker.all(connection=redis_connection) # Returns the actual worker objects
         #logger.debug(f"Total rq workers ({len(workers)}): {workers}")
         #our_queue_workers = Worker.all(queue=our_queue)
-        #logger.debug(f"Our {our_adjusted_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
+        #logger.debug(f"Our {our_adjusted_queue_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
 
         # Find out how many workers we have
         #worker_count = Worker.count(connection=redis_connection)
         #logger.debug(f"Total rq workers = {worker_count}")
         #our_queue_worker_count = Worker.count(queue=our_queue)
-        #logger.debug(f"Our {our_adjusted_name} queue workers = {our_queue_worker_count}")
+        #logger.debug(f"Our {our_adjusted_queue_name} queue workers = {our_queue_worker_count}")
 
         len_our_queue = len(our_queue) # Update
-        other_queue = Queue(our_other_adjusted_name, connection=redis_connection)
-        logger.info(f"{prefixed_our_name} queued valid job to {our_adjusted_name} queue " \
-                    f"({len_our_queue} jobs now " \
+        other_queue = Queue(our_other_adjusted_queue_name, connection=redis_connection)
+        queue2 = Queue(our_adjusted_queue_name2, connection=redis_connection)
+        other_queue2 = Queue(our_other_adjusted_queue_name2, connection=redis_connection)
+        logger.info(f"{prefixed_our_name} queued valid {job_type} job to {our_adjusted_queue_name} queue " \
+                    f"({len_our_queue} {job_type} jobs now " \
                         f"for {Worker.count(queue=our_queue)} workers, " \
-                    f"{len(other_queue)} jobs in {our_other_adjusted_name} queue " \
+                    f"{len(other_queue)} {job_type} jobs in {our_other_adjusted_queue_name} queue " \
                         f"for {Worker.count(queue=other_queue)} workers, " \
-                    f"{len_our_failed_queue} failed jobs) at {datetime.utcnow()}\n")
+                    f"{len_HTML_failed_queue} failed {job_type} jobs), " \
+                    f"({len(queue2)} {not_job_type} jobs in {our_adjusted_queue_name2} queue, " \
+                    f"{len(other_queue2)} {not_job_type} jobs in {our_other_adjusted_queue_name2} queue) " \
+                    f"at {datetime.utcnow()}\n")
         stats_client.incr('posts.succeeded')
         return jsonify(our_response_dict)
     else:
