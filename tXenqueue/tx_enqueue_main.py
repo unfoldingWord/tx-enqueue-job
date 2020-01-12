@@ -200,27 +200,27 @@ def job_receiver():
     # Collect and log some helpful information
     HTML_queue = Queue(our_adjusted_convertHTML_queue_name, connection=redis_connection)
     len_HTML_queue = len(HTML_queue)
-    stats_client.gauge('HTML.queue.length.current', len_HTML_queue)
+    stats_client.gauge('queue.HTML.length.current', len_HTML_queue)
     len_HTML_failed_queue = handle_failed_queue(our_adjusted_convertHTML_queue_name)
-    stats_client.gauge('HTML.queue.length.failed', len_HTML_failed_queue)
+    stats_client.gauge('queue.HTML.length.failed', len_HTML_failed_queue)
     PDF_queue = Queue(our_adjusted_convertPDF_queue_name, connection=redis_connection)
     len_PDF_queue = len(PDF_queue)
-    stats_client.gauge('PDF.queue.length.current', len_PDF_queue)
+    stats_client.gauge('queue.PDF.length.current', len_PDF_queue)
     len_PDF_failed_queue = handle_failed_queue(our_adjusted_convertPDF_queue_name)
-    stats_client.gauge('PDF.queue.length.failed', len_PDF_failed_queue)
+    stats_client.gauge('queue.PDF.length.failed', len_PDF_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
     logger.debug(f"Total rq workers = {total_worker_count}")
     queue1_worker_count = Worker.count(queue=HTML_queue)
     logger.debug(f"Our {our_adjusted_convertHTML_queue_name} queue workers = {queue1_worker_count}")
-    stats_client.gauge('HTML.workers.available', queue1_worker_count)
+    stats_client.gauge('workers.HTML.available', queue1_worker_count)
     if queue1_worker_count < 1:
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
     queue2_worker_count = Worker.count(queue=HTML_queue)
     logger.debug(f"Our {our_adjusted_convertPDF_queue_name} queue workers = {queue2_worker_count}")
-    stats_client.gauge('PDF.workers.available', queue2_worker_count)
+    stats_client.gauge('workers.PDF.available', queue2_worker_count)
     if queue2_worker_count < 1:
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted

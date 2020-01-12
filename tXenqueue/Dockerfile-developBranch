@@ -17,7 +17,7 @@ RUN pip3 install --requirement requirements.txt
 EXPOSE 8000
 
 # Define environment variables
-ENV REDIS_HOSTNAME=172.20.0.2
+ENV REDIS_HOSTNAME=172.21.0.2
 ENV QUEUE_PREFIX dev-
 ENV DEBUG_MODE True
 # NOTE: The following environment variables are expected to be set for testing:
