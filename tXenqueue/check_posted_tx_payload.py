@@ -7,9 +7,10 @@ from tx_enqueue_helpers import get_gogs_user
 
 
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
-COMPULSORY_FIELDNAMES = 'job_id', 'user_token', \
+COMPULSORY_FIELDNAMES = 'job_id', \
                 'resource_type', 'input_format', 'output_format', 'source'
-OPTIONAL_FIELDNAMES = 'callback', 'identifier', 'options', 'door43_webhook_received_at'
+OPTIONAL_FIELDNAMES = 'user_token', \
+                'callback', 'identifier', 'options', 'door43_webhook_received_at'
 ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
 OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
@@ -83,15 +84,20 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
             if some_option_fieldname not in OPTION_SUBFIELDNAMES:
                 logger.warning(f'Unexpected {some_option_fieldname} option field in tX payload')
 
-    # Check the Gogs/Gitea user token
-    if len(payload_json['user_token']) != 40:
-        logger.error(f"Invalid user token '{payload_json['user_token']}' in tX payload")
-        return False, {'error': f"Invalid user token '{payload_json['user_token']}'"}
-    user = get_gogs_user(payload_json['user_token'])
-    logger.info(f"Found Gitea user: {user}")
-    if not user:
-        logger.error(f"Unknown user token '{payload_json['user_token']}' in tX payload")
-        return False, {'error': f"Unknown user token '{payload_json['user_token']}'"}
+    print("Request headers:", request.headers)
+    if 'user_token' in payload_json: # now optional
+        # Check the Gogs/Gitea user token
+        if len(payload_json['user_token']) != 40:
+            logger.error(f"Invalid user token '{payload_json['user_token']}' in tX payload")
+            return False, {'error': f"Invalid user token '{payload_json['user_token']}'"}
+        user = get_gogs_user(payload_json['user_token'])
+        logger.info(f"Found Gitea user: {user}")
+        if not user:
+            logger.error(f"Unknown user token '{payload_json['user_token']}' in tX payload")
+            return False, {'error': f"Unknown user token '{payload_json['user_token']}'"}
+    else: # no user token
+        # Check the source of the request -- must be door43.org
+        return False, {'error': f"Missing user token in '{payload_json}'"}
 
     logger.info("tX payload seems ok")
     return True, payload_json
