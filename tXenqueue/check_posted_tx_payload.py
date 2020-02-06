@@ -2,6 +2,7 @@
 #       and from tx-manager/client_webhook/ClientWebhookHandler
 
 from typing import Dict, Tuple, Any
+from os import getenv
 
 from tx_enqueue_helpers import get_gogs_user
 
@@ -27,6 +28,12 @@ KNOWN_RESOURCE_SUBJECTS = ('Generic_Markdown',
             # A similar table also exists in door43-job-handler:webhook.py
 KNOWN_INPUT_FORMATS = 'md', 'usfm', 'txt', 'tsv',
 KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
+
+
+# Get the redis URL from the environment, otherwise use a local test instance
+redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
+# Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
+debug_mode_flag = 'gogs' not in redis_hostname # Typically set to something like 172.20.0.2
 
 
 def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
@@ -101,6 +108,9 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
         if request.headers['Host'] == 'door43.org' \
         or request.headers['Host'].endswith('.door43.org'):
             logger.info(f"Accepted request from {request.headers['Host']}")
+        elif debug_mode_flag \
+        and request.headers['Host'] == '127.0.0.1:80':
+            logger.info(f"Accepted DEBUG request from {request.headers['Host']}")
         else:
             logger.error(f"No Gitea user token; rejected request from {request.headers['Host']}")
             return False, {'error': f"Missing Gitea user token in '{payload_json}'"}
