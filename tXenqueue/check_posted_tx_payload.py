@@ -84,21 +84,26 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
             if some_option_fieldname not in OPTION_SUBFIELDNAMES:
                 logger.warning(f'Unexpected {some_option_fieldname} option field in tX payload')
 
-    print("Request headers:", request.headers)
     if 'user_token' in payload_json: # now optional
         # Check the Gogs/Gitea user token
         if len(payload_json['user_token']) != 40:
-            logger.error(f"Invalid user token '{payload_json['user_token']}' in tX payload")
-            return False, {'error': f"Invalid user token '{payload_json['user_token']}'"}
+            logger.error(f"Invalid Gitea user token '{payload_json['user_token']}' in tX payload")
+            return False, {'error': f"Invalid Gitea user token '{payload_json['user_token']}'"}
         user = get_gogs_user(payload_json['user_token'])
         logger.info(f"Found Gitea user: {user}")
         if not user:
-            logger.error(f"Unknown user token '{payload_json['user_token']}' in tX payload")
-            return False, {'error': f"Unknown user token '{payload_json['user_token']}'"}
-    else: # no user token
+            logger.error(f"Unknown Gitea user token '{payload_json['user_token']}' in tX payload")
+            return False, {'error': f"Unknown Gitea user token '{payload_json['user_token']}'"}
+    else: # no Gitea user token
+        # print("Request headers:", request.headers)
         # Check the source of the request -- must be door43.org
-        # TODO: FIX -- TEMPORARILY ALLOW THIS THROUGH!!!
-        return False, {'error': f"Missing user token in '{payload_json}'"}
+        # if 'Host' in request.headers \
+        if request.headers['Host'] == 'door43.org' \
+        or request.headers['Host'].endswith('.door43.org'):
+            logger.info(f"Accepted request from {request.headers['Host']}")
+        else:
+            logger.error(f"No Gitea user token; rejected request from {request.headers['Host']}")
+            return False, {'error': f"Missing Gitea user token in '{payload_json}'"}
 
     logger.info("tX payload seems ok")
     return True, payload_json
