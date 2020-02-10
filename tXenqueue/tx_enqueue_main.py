@@ -274,14 +274,14 @@ def job_receiver():
                     # Expected identifier in form '<repo_owner_username>/<repo_name>--<branch_or_tag_name>'
                     #  e.g. 'unfoldingWord/en_obs--v1'
                     logger.debug("Using1 'identifier' field to determine expected_output_URL…")
-                    part1, part2, part3 = response_dict['identifier'].split('--')
-                    expected_output_URL = f"{PDF_CDN_BUCKET}{part1}/{part2}/{part3}/{response_dict['identifier']}.pdf"
+                    repo_owner_username, repo_name, branch_or_tag_name = response_dict['identifier'].split('--')
+                    expected_output_URL = f"{PDF_CDN_BUCKET}{repo_owner_username}/{repo_name}/{branch_or_tag_name}/{response_dict['identifier']}.pdf"
                 elif response_dict['identifier'].count('--') == 3:
                     # Expected identifier in form '<repo_owner_username>/<repo_name>--<branch_name>--<commit_hash>'
                     #  e.g. 'unfoldingWord/en_obs--master--7dac1e5ba2'
                     logger.debug("Using2 'identifier' field to determine expected_output_URL…")
-                    part1, part2, part3, _part4 = response_dict['identifier'].split('--')
-                    expected_output_URL = f"{PDF_CDN_BUCKET}{part1}/{part3}/{part3}/{response_dict['identifier']}.pdf"
+                    repo_owner_username, repo_name, branch_or_tag_name, _commit_hash = response_dict['identifier'].split('--')
+                    expected_output_URL = f"{PDF_CDN_BUCKET}{repo_owner_username}/{repo_name}/{branch_or_tag_name}/{repo_owner_username}--{repo_name}--{branch_or_tag_name}.pdf"
             elif response_dict['source'].count('/') == 6 \
             and response_dict['source'].endswith('.zip'):
                 # Expected URL in form 'https://git.door43.org/<repo_owner_username>/<repo_name>/archive/<branch_or_tag_name>.zip'
