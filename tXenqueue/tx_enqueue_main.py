@@ -288,6 +288,8 @@ def job_receiver():
                 #  e.g. 'https://git.door43.org/unfoldingWord/en_obs/archive/master.zip'
                 logger.debug("Using 'source' field to determine expected_output_URL…")
                 parts = response_dict['source'][:-4].split('/') # Remove the .zip first
+                if len(parts) != 7:
+                    logger.critical(f"Source field is in unexpected form: '{response_dict['source']}' -> {parts}.zip")
                 expected_output_URL = f"{PDF_CDN_BUCKET}{parts[3]}/{parts[4]}/{parts[6]}/{parts[3]}--{parts[4]}--{parts[6]}"
             logger.info(f"Got expected_output_URL = {expected_output_URL}")
 
