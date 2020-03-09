@@ -18,7 +18,7 @@ OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
 
 KNOWN_RESOURCE_SUBJECTS = ('Generic_Markdown',
             'Greek_Lexicon', 'Hebrew-Aramaic_Lexicon',
-            # and 14 from https://api.door43.org/v3/subjects (last checked 10 Dec 2019)
+            # and 14 from https://api.door43.org/v3/subjects (last checked Mar 2020)
             'Bible', 'Aligned_Bible', 'Greek_New_Testament', 'Hebrew_Old_Testament',
             'Translation_Academy', 'Translation_Questions', 'Translation_Words',
             'Translation_Notes', 'TSV_Translation_Notes',
@@ -102,8 +102,8 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
             logger.error(f"Unknown Gitea user token '{payload_json['user_token']}' in tX payload")
             return False, {'error': f"Unknown Gitea user token '{payload_json['user_token']}'"}
     else: # no Gitea user token
-        # print("Request headers:", request.headers)
         # Check the source of the request -- must be door43.org
+        # print("Request headers:", request.headers)
         # if 'Host' in request.headers \
         if request.headers['Host'] == 'door43.org' \
         or request.headers['Host'].endswith('.door43.org'):
@@ -115,6 +115,6 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
             logger.error(f"No Gitea user token; rejected request from {request.headers['Host']}")
             return False, {'error': f"Missing Gitea user token in '{payload_json}'"}
 
-    logger.info("tX payload seems ok")
+    logger.info(f"tX payload for {payload_json['input_format']}➞{payload_json['output_format']} seems ok")
     return True, payload_json
 # end of check_posted_tx_payload
