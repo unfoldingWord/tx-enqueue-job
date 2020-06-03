@@ -12,12 +12,12 @@ Accepts a JSON payload to start a convert (and in most cases, lint) process.
 
 Expected JSON payload:
     job_id: any string to identify this particular job to the caller
-    identifier: optional -- any human readable string to help identify this particular job
+    identifier: optional—any human readable string to help identify this particular job
     user_token: A 40-character Door43 Gogs/Gitea user token
     resource_type: one of 17 (as at Jan2020) strings to identify the input type
                             e.g., 'OBS_Study_Notes' with underlines not spaces.
-    input_format: input file(s) format -- one of 'md', 'usfm', 'txt', 'tsv'.
-    output_format: desired output format -- one of 'html', 'pdf', or eventually 'docx'.
+    input_format: input file(s) format—one of 'md', 'usfm', 'txt', 'tsv'.
+    output_format: desired output format—one of 'html', 'pdf', or eventually 'docx'.
     source: url of zip file containing the input files.
     callback: optional url of callback function to be notified upon completion.
     options: optional dict of option parameters (depending on output_format).
@@ -42,7 +42,7 @@ import sys
 from datetime import datetime, timedelta
 import logging
 
-# Library (PyPi) imports
+# Library (PyPI) imports
 from flask import Flask, request, jsonify
 # NOTE: We use StrictRedis() because we don't need the backwards compatibility of Redis()
 from redis import StrictRedis
@@ -69,7 +69,7 @@ WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '
 
 
 # Look at relevant environment variables
-prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable -- set to 'dev-' for development
+prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable—set to 'dev-' for development
 prefixed_our_name = prefix + OUR_NAME
 
 
@@ -111,7 +111,7 @@ logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', DEV_PREFIX):
-    logger.critical(f"Unexpected prefix: '{prefix}' -- expected '' or '{DEV_PREFIX}'")
+    logger.critical(f"Unexpected prefix: '{prefix}' — expected '' or '{DEV_PREFIX}'")
 if prefix:
     our_adjusted_convertHTML_queue_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
     our_adjusted_convertOBSPDF_queue_name = prefix + OUR_OBS_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
@@ -328,7 +328,7 @@ def job_receiver():
         our_response_dict['tx_retry_count'] = 0
         logger.debug(f"About to queue {job_type} job: {our_response_dict}")
 
-        # NOTE: No ttl specified on the next line -- this seems to cause unrun jobs to be just silently dropped
+        # NOTE: No ttl specified on the next line—this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
         our_queue.enqueue('webhook.job', our_response_dict, job_timeout=JOB_TIMEOUT) # A function named webhook.job will be called by the worker

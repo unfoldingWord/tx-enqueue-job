@@ -2,8 +2,8 @@
 #   when attrs removed deprecated attribute 'convert' used by gogs_client
 attrs==19.1.0
 
-Flask==1.1.1
-rq==1.2.2
+Flask==1.1.2
+rq==1.4.2
 gunicorn==20.0.4
 statsd==3.3.0
 watchtower==0.7.3

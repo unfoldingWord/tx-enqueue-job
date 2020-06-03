@@ -33,6 +33,6 @@ A nginx instance is expected to face the outside world.
 
 The next part in the tx workflow can be found in the [tx-job-handler](https://github.com/unfoldingWord-dev/tx-job-handler)
 repo. The job handler contains `webhook.py` (see below) which is given jobs
-that have been removed from the queue and then processes them -- adding them
+that have been removed from the queue and then processes them—adding them
 back to a `failed` queue if they give an exception or time-out. Note that the
 queue name here in `enqueueMain.py` must match the one in the job handler `rq_settings.py`.
