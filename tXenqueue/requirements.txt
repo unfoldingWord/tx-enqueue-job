@@ -3,7 +3,7 @@
 attrs==19.1.0
 
 Flask==1.1.2
-rq==1.4.3
+rq==1.5.1
 gunicorn==20.0.4
 statsd==3.3.0
 watchtower==0.8.0
