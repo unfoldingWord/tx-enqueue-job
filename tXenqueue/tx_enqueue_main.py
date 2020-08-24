@@ -73,9 +73,9 @@ prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment v
 prefixed_our_name = prefix + OUR_NAME
 
 
-JOB_TIMEOUT = '400s' if prefix else '300s' # Then a running job (taken out of the queue) will be considered to have failed
+JOB_TIMEOUT = '900s' if prefix else '800s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
-
+    #       T4T is definitely one of our largest/slowest resources to lint and convert
 
 # Get the redis URL from the environment, otherwise use a local test instance
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
