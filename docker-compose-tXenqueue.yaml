@@ -21,3 +21,8 @@ services:
     build:
       context: ./tXenqueue
       dockerfile: Dockerfile-developBranch
+
+networks:
+  default:
+    external:
+      name: tx-net
