@@ -253,13 +253,13 @@ def job_receiver():
         our_queue.enqueue('webhook.job', our_response_dict, job_timeout=JOB_TIMEOUT) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
-        Find out who our workers are
+        # Find out who our workers are
         workers = Worker.all(connection=redis_connection) # Returns the actual worker objects
         logger.debug(f"Total rq workers ({len(workers)}): {workers}")
         our_queue_workers = Worker.all(queue=our_queue)
         logger.debug(f"Our {our_adjusted_queue_name} queue workers ({len(our_queue_workers)}): {our_queue_workers}")
 
-        Find out how many workers we have
+        # Find out how many workers we have
         worker_count = Worker.count(connection=redis_connection)
         logger.debug(f"Total rq workers = {worker_count}")
         our_queue_worker_count = Worker.count(queue=our_queue)
