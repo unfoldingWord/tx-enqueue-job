@@ -109,7 +109,7 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
         or request.headers['Host'].endswith('.door43.org'):
             logger.info(f"Accepted request from {request.headers['Host']}")
         elif debug_mode_flag \
-        and request.headers['Host'] == '127.0.0.1:80':
+        and request.headers['Host'] in ['127.0.0.1:80', 'tx-enqueue-job_proxy_1:80', 'txproxy:80']:
             logger.info(f"Accepted DEBUG request from {request.headers['Host']}")
         else:
             logger.error(f"No Gitea user token; rejected request from {request.headers['Host']}")
