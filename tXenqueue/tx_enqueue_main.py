@@ -223,7 +223,7 @@ def job_receiver():
         our_other_adjusted_queue_name = our_other_adjusted_convert_queue_name
         our_queue = queue
         if job_type == 'PDF':
-            expected_output_URL += f'{PDF_CDN_BUCKET}{our_job_id}_printables.zip'
+            expected_output_URL = f'{PDF_CDN_BUCKET}{our_job_id}_pdf.zip'
         else:
             expected_output_URL = f'{TX_JOB_CDN_BUCKET}{our_job_id}.zip'
         logger.info(f"Got expected_output_URL = {expected_output_URL}")
