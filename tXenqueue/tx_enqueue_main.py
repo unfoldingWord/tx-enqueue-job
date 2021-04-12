@@ -139,10 +139,7 @@ logger.info(f"graphite_url is '{graphite_url}'")
 stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
-
 TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
-PDF_CDN_BUCKET = f'https://{prefix}cdn.door43.org/u/'
-
 
 app = Flask(__name__)
 # Not sure that we need this Flask logging
@@ -222,10 +219,7 @@ def job_receiver():
         our_adjusted_queue_name = our_adjusted_convert_queue_name
         our_other_adjusted_queue_name = our_other_adjusted_convert_queue_name
         our_queue = queue
-        if job_type == 'PDF':
-            expected_output_URL = f'{PDF_CDN_BUCKET}{our_job_id}_pdf.zip'
-        else:
-            expected_output_URL = f'{TX_JOB_CDN_BUCKET}{our_job_id}.zip'
+        expected_output_URL = f'{TX_JOB_CDN_BUCKET}{our_job_id}.zip'
         logger.info(f"Got expected_output_URL = {expected_output_URL}")
 
         # Extend the given payload (dict) to add our required fields
