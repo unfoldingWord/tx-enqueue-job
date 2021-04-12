@@ -9,7 +9,8 @@ from tx_enqueue_helpers import get_gogs_user
 
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 COMPULSORY_FIELDNAMES = 'job_id', \
-                'resource_type', 'input_format', 'output_format', 'source'
+                'resource_type', 'input_format', 'output_format', 'source', 'repo_name', 'repo_owner', 'repo_ref', \
+                'repo_data_url', 'dcs_domain'
 OPTIONAL_FIELDNAMES = 'user_token', \
                 'callback', 'identifier', 'options', 'door43_webhook_received_at'
 ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
