@@ -3,7 +3,7 @@ version: "3.4"
 # 3.4 requires Docker engine release 17.09.0+
 
 services:
-  proxy:
+  txproxy:
     image: "nginx:latest"
     volumes:
       - ./proxyConf/dev-nginx.conf:/etc/nginx/conf.d/mysite.template:ro
