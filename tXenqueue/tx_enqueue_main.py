@@ -50,6 +50,7 @@ from rq import Queue, Worker
 from statsd import StatsClient # Graphite front-end
 from boto3 import Session
 from watchtower import CloudWatchLogHandler
+from urllib.parse import urlparse
 
 # Local imports
 from check_posted_tx_payload import check_posted_tx_payload #, check_posted_callback_payload
@@ -206,6 +207,19 @@ def job_receiver():
     if queue1_worker_count < 1:
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
+
+    if 'release' in request and 'id' in request['release'] and 'repository' in request and 'subject' in request['repository']:
+        request['job_id'] = f"Door43_PDF_requeset_{request['release']['id']}"
+        request['resource_type'] = request['repository']['subect'].replace(' ', '_')
+        request['input_format'] = ''
+        request['output_format'] = 'pdf'
+        request['source'] = request['release']['zipball_url']
+        request['repo_name'] = request['repository']['name']
+        request['repo_owner'] = request['repository']['owner']['name']
+        request['repo_url'] = request['respository']['html_url']
+        request['repo_ref'] = request['release']['tag_name']
+        request['repo_data_url'] = request['release']['zipball_url']
+        request['dcs_domain'] = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(request['source']))
 
     response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
     # response_dict is json payload if successful, else error info
