@@ -2,20 +2,6 @@ import hashlib
 from datetime import datetime
 import logging
 
-from gogs_tools.gogs_handler import GogsHandler
-
-GOGS_URL = 'https://git.door43.org'
-gogs_handler = GogsHandler(GOGS_URL)
-
-
-def get_gogs_user(token):
-    """
-    Given a user token, return the Gogs user details if any.
-    """
-    # logging.debug(f"get_gogs_user({token})")
-    return gogs_handler.get_user(token)
-
-
 def get_unique_job_id() -> str:
     """
     :return string:

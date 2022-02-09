@@ -1,5 +1,5 @@
 # To handle packaging error 7 Oct 2019
-#   when attrs removed deprecated attribute 'convert' used by gogs_client
+#   when attrs removed deprecated attribute 'convert' used by gitea_client
 attrs==19.1.0
 
 Flask==1.1.2
@@ -7,4 +7,4 @@ rq==1.9.0
 gunicorn==20.0.4
 statsd==3.3.0
 watchtower==1.0.6
-gogs_client==1.0.6
+gitea_client==1.0.9

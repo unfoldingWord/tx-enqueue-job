@@ -4,9 +4,6 @@
 from typing import Dict, Tuple, Any
 from os import getenv
 
-from tx_enqueue_helpers import get_gogs_user
-
-
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 COMPULSORY_FIELDNAMES = 'job_id', \
                 'resource_type', 'input_format', 'output_format', 'source', 'repo_name', 'repo_owner', 'repo_ref', \
@@ -34,7 +31,7 @@ KNOWN_OUTPUT_FORMATS = 'docx', 'html', 'pdf',
 # Get the redis URL from the environment, otherwise use a local test instance
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
 # Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
-debug_mode_flag = 'gogs' not in redis_hostname # Typically set to something like 172.20.0.2
+debug_mode_flag = getenv('DEBUG_MODE', False)
 
 
 def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
@@ -93,15 +90,15 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
                 logger.warning(f'Unexpected {some_option_fieldname} option field in tX payload')
 
     if 'user_token' in payload_json: # now optional
-        # Check the Gogs/Gitea user token
+        # Check the DCS user token
         if len(payload_json['user_token']) != 40:
-            logger.error(f"Invalid Gitea user token '{payload_json['user_token']}' in tX payload")
-            return False, {'error': f"Invalid Gitea user token '{payload_json['user_token']}'"}
-        user = get_gogs_user(payload_json['user_token'])
-        logger.info(f"Found Gitea user: {user}")
+            logger.error(f"Invalid DCS user token '{payload_json['user_token']}' in tX payload")
+            return False, {'error': f"Invalid DCS user token '{payload_json['user_token']}'"}
+        user = get_dcs_user(payload_json['user_token'])
+        logger.info(f"Found DCS user: {user}")
         if not user:
-            logger.error(f"Unknown Gitea user token '{payload_json['user_token']}' in tX payload")
-            return False, {'error': f"Unknown Gitea user token '{payload_json['user_token']}'"}
+            logger.error(f"Unknown DCS user token '{payload_json['user_token']}' in tX payload")
+            return False, {'error': f"Unknown DCS user token '{payload_json['user_token']}'"}
     else: # no Gitea user token
         # Check the source of the request -- must be door43.org
         # print("Request headers:", request.headers)

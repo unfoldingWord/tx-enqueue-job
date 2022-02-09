@@ -5,7 +5,7 @@
 # TODO: We don't currently have any way to clear the failed queue
 
 """
-tX Enqueue Main
+tX Enqueue Job Main
 
 Accepts a JSON payload to start a convert (and in most cases, lint) process.
     check_posted_tx_payload.py does most of the payload content checking.
@@ -13,7 +13,7 @@ Accepts a JSON payload to start a convert (and in most cases, lint) process.
 Expected JSON payload:
     job_id: any string to identify this particular job to the caller
     identifier: optional—any human readable string to help identify this particular job
-    user_token: A 40-character Door43 Gogs/Gitea user token
+    user_token: A 40-character DCS Gitea user token
     resource_type: one of 17 (as at Jan2020) strings to identify the input type
                             e.g., 'OBS_Study_Notes' with underlines not spaces.
     input_format: input file(s) format—one of 'md', 'usfm', 'txt', 'tsv'.
@@ -28,7 +28,7 @@ A JSON response dict is immediately returned as a response to the caller:
     Response JSON: Contains all of the given fields from the payload, plus
         success: True to indicate that the job was queued
         status: 'queued'
-        queue_name: '(dev-)tX_webhook'
+        queue_name: '(dev-)tx_job_handler'
         tx_job_queued_at: current date & time
         output: URL of zipfile or PDF where converted output will be able to be downloaded from
         expires_at: date & time when above output link may become invalid (one day later)
@@ -57,8 +57,8 @@ from check_posted_tx_payload import check_posted_tx_payload #, check_posted_call
 from tx_enqueue_helpers import get_unique_job_id
 
 
-OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) queue name (and graphite name)
-                        #   -- MUST match setup.py in tx-job-handler
+OUR_NAME = 'tx_job_handler' # Becomes the (perhaps prefixed) queue name (and graphite name)
+                        #   -- MUST match setup.py in tx_job_handler
 #CALLBACK_SUFFIX = '_callback'
 DEV_PREFIX = 'dev-'
 
@@ -66,11 +66,9 @@ DEV_PREFIX = 'dev-'
 WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '/'
 #CALLBACK_URL_SEGMENT = WEBHOOK_URL_SEGMENT + 'callback/'
 
-
 # Look at relevant environment variables
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable—set to 'dev-' for development
 prefixed_our_name = prefix + OUR_NAME
-
 
 JOB_TIMEOUT = '900s' if prefix else '800s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
@@ -79,9 +77,9 @@ JOB_TIMEOUT = '900s' if prefix else '800s' # Then a running job (taken out of th
 # Get the redis URL from the environment, otherwise use a local test instance
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
 # Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
-debug_mode_flag = 'gogs' not in redis_hostname # Typically set to something like 172.20.0.2
+debug_mode_flag = getenv('DEBUG_MODE', False)
+use_watchtower = getenv('USE_WATCHTOWER', True)
 test_string = " (TEST)" if debug_mode_flag else ""
-
 
 # Setup logging
 logger = logging.getLogger(prefixed_our_name)
@@ -98,14 +96,14 @@ log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
                  f"{'_DEBUG' if debug_mode_flag else ''}" \
                  f"{'_TEST' if test_mode_flag else ''}" \
                  f"{'_TravisCI' if travis_flag else ''}"
-watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
-                                              log_group=log_group_name,
-                                              stream_name=prefixed_our_name)
-logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
-logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
-
+if use_watchtower:
+    watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
+                                                 log_group=log_group_name,
+                                                  stream_name=prefixed_our_name)
+    logger.addHandler(watchtower_log_handler)
+    logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
@@ -118,10 +116,8 @@ else:
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
 #our_callback_name = our_adjusted_convert_queue_name + CALLBACK_SUFFIX
 
-
 prefix_string = f" with prefix '{prefix}'" if prefix else ""
 logger.info(f"tx_enqueue_main.py{prefix_string}{test_string} running on Python v{sys.version}")
-
 
 # Connect to Redis now so it fails at import time if no Redis instance available
 logger.info(f"redis_hostname is '{redis_hostname}'")
@@ -137,18 +133,14 @@ logger.info(f"graphite_url is '{graphite_url}'")
 stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
-
 TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 PDF_CDN_BUCKET = f'https://{prefix}cdn.door43.org/u/'
-
 
 app = Flask(__name__)
 # Not sure that we need this Flask logging
 # app.logger.addHandler(watchtower_log_handler)
 # logging.getLogger('werkzeug').addHandler(watchtower_log_handler)
 logger.info(f"{prefixed_our_name} is up and ready to go")
-
-
 
 def handle_failed_queue(our_queue_name:str) -> int:
     """
@@ -175,7 +167,6 @@ def handle_failed_queue(our_queue_name:str) -> int:
         logger.info(f"Have {len_our_failed_queue} of our jobs in failed queue")
     return len_our_failed_queue
 # end of handle_failed_queue function
-
 
 # This is the main workhorse part of this code
 #   rq automatically returns a "Method Not Allowed" error for a GET, etc.
@@ -224,7 +215,7 @@ def job_receiver():
     response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
     # response_dict is json payload if successful, else error info
     if response_ok_flag:
-        logger.debug("tX_job_receiver processing good payload…")
+        logger.debug("tx-enqueue-job processing good payload…")
 
         our_job_id = response_dict['job_id'] if 'job_id' in response_dict \
                         else get_unique_job_id()
@@ -284,7 +275,6 @@ def job_receiver():
         logger.error(f"{prefixed_our_name} ignored invalid payload; responding with {response_dict}\n")
         return jsonify(response_dict), 400
 # end of job_receiver()
-
 
 if __name__ == '__main__':
     app.run()
