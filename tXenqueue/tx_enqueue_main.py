@@ -78,7 +78,6 @@ JOB_TIMEOUT = '900s' if prefix else '800s' # Then a running job (taken out of th
 redis_hostname = getenv('REDIS_HOSTNAME', 'redis')
 # Use this to detect test mode (coz logs will go into a separate AWS CloudWatch stream)
 debug_mode_flag = getenv('DEBUG_MODE', False)
-use_watchtower = getenv('USE_WATCHTOWER', True)
 test_string = " (TEST)" if debug_mode_flag else ""
 
 # Setup logging
@@ -98,12 +97,11 @@ log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
                  f"{'_TravisCI' if travis_flag else ''}"
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
-if use_watchtower:
-    watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
-                                                 log_group=log_group_name,
-                                                  stream_name=prefixed_our_name)
-    logger.addHandler(watchtower_log_handler)
-    logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
+watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
+                                            log_group=log_group_name,
+                                            stream_name=prefixed_our_name)
+logger.addHandler(watchtower_log_handler)
+logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
