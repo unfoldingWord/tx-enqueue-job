@@ -197,18 +197,19 @@ def job_receiver():
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
 
-    if 'release' in request and 'id' in request['release'] and 'repository' in request and 'subject' in request['repository']:
-        request['job_id'] = f"Door43_PDF_requeset_{request['release']['id']}"
-        request['resource_type'] = request['repository']['subect'].replace(' ', '_')
-        request['input_format'] = ''
-        request['output_format'] = 'pdf'
-        request['source'] = request['release']['zipball_url']
-        request['repo_name'] = request['repository']['name']
-        request['repo_owner'] = request['repository']['owner']['name']
-        request['repo_url'] = request['respository']['html_url']
-        request['repo_ref'] = request['release']['tag_name']
-        request['repo_data_url'] = request['release']['zipball_url']
-        request['dcs_domain'] = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(request['source']))
+    data = request.data
+    if 'release' in data and 'id' in data['release'] and 'repository' in data and 'subject' in data['repository']:
+        data['job_id'] = f"Door43_PDF_requeset_{request['release']['id']}"
+        data['resource_type'] = request['repository']['subect'].replace(' ', '_')
+        data['input_format'] = ''
+        data['output_format'] = 'pdf'
+        data['source'] = data['release']['zipball_url']
+        data['repo_name'] = data['repository']['name']
+        data['repo_owner'] = data['repository']['owner']['name']
+        data['repo_url'] = data['respository']['html_url']
+        data['repo_ref'] = data['release']['tag_name']
+        data['repo_data_url'] = data['release']['zipball_url']
+        data['dcs_domain'] = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(data['source']))
 
     response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
     # response_dict is json payload if successful, else error info
@@ -276,3 +277,4 @@ def job_receiver():
 
 if __name__ == '__main__':
     app.run()
+
