@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime
 import logging
 
+
 def get_unique_job_id() -> str:
     """
     :return string:

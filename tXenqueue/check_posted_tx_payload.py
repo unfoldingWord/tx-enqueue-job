@@ -4,8 +4,6 @@
 from typing import Dict, Tuple, Any
 from os import getenv
 
-from tx_enqueue_helpers import get_gogs_user
-
 
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 COMPULSORY_FIELDNAMES = 'job_id', \
@@ -96,11 +94,11 @@ def check_posted_tx_payload(request, logger) -> Tuple[bool, Dict[str,Any]]:
         if len(payload_json['user_token']) != 40:
             logger.error(f"Invalid Gitea user token '{payload_json['user_token']}' in tX payload")
             return False, {'error': f"Invalid Gitea user token '{payload_json['user_token']}'"}
-        user = get_gogs_user(payload_json['user_token'])
-        logger.info(f"Found Gitea user: {user}")
-        if not user:
-            logger.error(f"Unknown Gitea user token '{payload_json['user_token']}' in tX payload")
-            return False, {'error': f"Unknown Gitea user token '{payload_json['user_token']}'"}
+        # user = get_dcs_user(payload_json['user_token'])
+        # logger.info(f"Found Gitea user: {user}")
+        # if not user:
+        #     logger.error(f"Unknown Gitea user token '{payload_json['user_token']}' in tX payload")
+        #     return False, {'error': f"Unknown Gitea user token '{payload_json['user_token']}'"}
     else: # no Gitea user token
         # Check the source of the request -- must be door43.org
         # print("Request headers:", request.headers)
