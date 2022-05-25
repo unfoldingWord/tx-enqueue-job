@@ -4,6 +4,7 @@
 from typing import Dict, Tuple, Any
 from os import getenv
 
+
 # NOTE: The following are currently only used to log warnings -- they are not strictly enforced here
 COMPULSORY_FIELDNAMES = 'job_id', \
                 'resource_type', 'input_format', 'output_format', 'source', 'repo_name', 'repo_owner', 'repo_ref', \
