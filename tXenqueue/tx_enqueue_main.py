@@ -86,8 +86,9 @@ sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
 aws_access_key_id = environ['AWS_ACCESS_KEY_ID']
+aws_secret_access_key = environ['AWS_SECRET_ACCESS_KEY']
 boto3_client = boto3.client("logs", aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
+                        aws_secret_access_key=aws_secret_access_key,
                         region_name='us-west-2')
 test_mode_flag = getenv('TEST_MODE', '')
 travis_flag = getenv('TRAVIS_BRANCH', '')
@@ -183,16 +184,16 @@ def job_receiver():
     # Collect and log some helpful information for all three queues
     queue = Queue(our_adjusted_convert_queue_name, connection=redis_connection)
     len_queue = len(queue)
-    stats_client.gauge('queue.length.current', len_queue)
+    stats_client.gauge('tx_job_handler.queue.length.current', len_queue)
     len_failed_queue = handle_failed_queue(our_adjusted_convert_queue_name)
-    stats_client.gauge('queue.length.failed', len_failed_queue)
+    stats_client.gauge('tx_job_handler.queue.length.failed', len_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
     logger.debug(f"Total rq workers = {total_worker_count}")
     queue1_worker_count = Worker.count(queue=queue)
     logger.debug(f"Our {our_adjusted_convert_queue_name} queue workers = {queue1_worker_count}")
-    stats_client.gauge('workers.available', queue1_worker_count)
+    stats_client.gauge('tx_job_handler.workers.available', queue1_worker_count)
     if queue1_worker_count < 1:
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
