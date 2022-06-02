@@ -37,19 +37,17 @@ A JSON response dict is immediately returned as a response to the caller:
 """
 
 # Python imports
-from os import getenv, environ
 import sys
-from datetime import datetime, timedelta
 import logging
+import boto3
+import watchtower
 
-# Library (PyPI) imports
+from os import getenv, environ
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
-# NOTE: We use StrictRedis() because we don't need the backwards compatibility of Redis()
 from redis import StrictRedis
 from rq import Queue, Worker
 from statsd import StatsClient # Graphite front-end
-from boto3 import Session
-from watchtower import CloudWatchLogHandler
 
 # Local imports
 from check_posted_tx_payload import check_posted_tx_payload #, check_posted_callback_payload
@@ -90,8 +88,9 @@ sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
 aws_access_key_id = environ['AWS_ACCESS_KEY_ID']
-boto3_session = Session(aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
+aws_secret_access_key = environ['AWS_SECRET_ACCESS_KEY']
+boto3_client = boto3.client("logs", aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key,
                         region_name='us-west-2')
 test_mode_flag = getenv('TEST_MODE', '')
 travis_flag = getenv('TRAVIS_BRANCH', '')
@@ -99,9 +98,10 @@ log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
                  f"{'_DEBUG' if debug_mode_flag else ''}" \
                  f"{'_TEST' if test_mode_flag else ''}" \
                  f"{'_TravisCI' if travis_flag else ''}"
-watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
-                                              log_group=log_group_name,
-                                              stream_name=prefixed_our_name)
+watchtower_log_handler = watchtower.CloudWatchLogHandler(boto3_client=boto3_client,
+                                                log_group_name=log_group_name,
+                                                stream_name=prefixed_our_name)
+
 logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
@@ -206,19 +206,19 @@ def job_receiver():
     # Collect and log some helpful information for all three queues
     HTML_queue = Queue(our_adjusted_convertHTML_queue_name, connection=redis_connection)
     len_HTML_queue = len(HTML_queue)
-    stats_client.gauge('queue.HTML.length.current', len_HTML_queue)
+    stats_client.gauge('tx_job_handler.queue.length.current', len_HTML_queue)
     len_HTML_failed_queue = handle_failed_queue(our_adjusted_convertHTML_queue_name)
-    stats_client.gauge('queue.HTML.length.failed', len_HTML_failed_queue)
+    stats_client.gauge('tx_job_handler.queue.length.failed', len_HTML_failed_queue)
     OBSPDF_queue = Queue(our_adjusted_convertOBSPDF_queue_name, connection=redis_connection)
     len_OBSPDF_queue = len(OBSPDF_queue)
-    stats_client.gauge('queue.OBSPDF.length.current', len_OBSPDF_queue)
+    stats_client.gauge('obs_pdf.queue.length.current', len_OBSPDF_queue)
     len_OBSPDF_failed_queue = handle_failed_queue(our_adjusted_convertOBSPDF_queue_name)
-    stats_client.gauge('queue.OBSPDF.length.failed', len_OBSPDF_failed_queue)
+    stats_client.gauge('obs_pdf.queue.OBSPDF.length.failed', len_OBSPDF_failed_queue)
     otherPDF_queue = Queue(our_adjusted_convertOtherPDF_queue_name, connection=redis_connection)
     len_otherPDF_queue = len(otherPDF_queue)
-    stats_client.gauge('queue.OBSPDF.length.current', len_otherPDF_queue)
+    stats_client.gauge('other_pdf.queue.length.current', len_otherPDF_queue)
     len_otherPDF_failed_queue = handle_failed_queue(our_adjusted_convertOtherPDF_queue_name)
-    stats_client.gauge('queue.OBSPDF.length.failed', len_otherPDF_failed_queue)
+    stats_client.gauge('other_pdf.queue.length.failed', len_otherPDF_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
