@@ -57,7 +57,7 @@ from tx_enqueue_helpers import get_unique_job_id
 LOGGING_NAME = 'tx_enqueue_job'
 TX_JOB_HANDLER_QUEUE_NAME = 'tx_job_handler' # Becomes the (perhaps prefixed) HTML queue name (and graphite name)
                         #   -- MUST match setup.py in tx-job-handler
-OBS_PDF_QUEUE_NAME = 'obs_pdf'
+OBS_PDF_QUEUE_NAME = 'tX_OBS_PDF_webhook'
 OTHER_PDF_QUEUE_NAME = 'tx_other_job_handler'
 #CALLBACK_SUFFIX = '_callback'
 DEV_PREFIX = 'dev-'
