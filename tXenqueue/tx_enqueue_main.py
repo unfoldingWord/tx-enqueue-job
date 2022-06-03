@@ -54,10 +54,11 @@ from check_posted_tx_payload import check_posted_tx_payload #, check_posted_call
 from tx_enqueue_helpers import get_unique_job_id
 
 
-OUR_NAME = 'tX_webhook' # Becomes the (perhaps prefixed) HTML queue name (and graphite name)
+LOGGING_NAME = 'tx_enqueue_job'
+TX_JOB_HANDLER_QUEUE_NAME = 'tx_job_handler' # Becomes the (perhaps prefixed) HTML queue name (and graphite name)
                         #   -- MUST match setup.py in tx-job-handler
-OUR_OBS_PDF_NAME = 'tX_OBS_PDF_webhook'
-OUR_OTHER_PDF_NAME = 'tX_other_PDF_webhook'
+OBS_PDF_QUEUE_NAME = 'obs_pdf'
+OTHER_PDF_QUEUE_NAME = 'tx_other_job_handler'
 #CALLBACK_SUFFIX = '_callback'
 DEV_PREFIX = 'dev-'
 
@@ -67,11 +68,11 @@ WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '
 
 
 # Look at relevant environment variables
-prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable—set to 'dev-' for development
-prefixed_our_name = prefix + OUR_NAME
+PREFIX = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable—set to 'dev-' for development
+PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME = PREFIX + TX_JOB_HANDLER_QUEUE_NAME
 
 
-JOB_TIMEOUT = '900s' if prefix else '800s' # Then a running job (taken out of the queue) will be considered to have failed
+JOB_TIMEOUT = '900s' if PREFIX else '800s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
     #       T4T is definitely one of our largest/slowest resources to lint and convert
 
@@ -83,7 +84,7 @@ test_string = " (TEST)" if debug_mode_flag else ""
 
 
 # Setup logging
-logger = logging.getLogger(prefixed_our_name)
+logger = logging.getLogger(LOGGING_NAME)
 sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
@@ -94,50 +95,50 @@ boto3_client = boto3.client("logs", aws_access_key_id=aws_access_key_id,
                         region_name='us-west-2')
 test_mode_flag = getenv('TEST_MODE', '')
 travis_flag = getenv('TRAVIS_BRANCH', '')
-log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
+log_group_name = f"{'' if test_mode_flag or travis_flag else PREFIX}tX" \
                  f"{'_DEBUG' if debug_mode_flag else ''}" \
                  f"{'_TEST' if test_mode_flag else ''}" \
                  f"{'_TravisCI' if travis_flag else ''}"
 watchtower_log_handler = watchtower.CloudWatchLogHandler(boto3_client=boto3_client,
                                                 log_group_name=log_group_name,
-                                                stream_name=prefixed_our_name)
+                                                stream_name=PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME)
 
 logger.addHandler(watchtower_log_handler)
 # Enable DEBUG logging for dev- instances (but less logging for production)
-logger.setLevel(logging.DEBUG if prefix else logging.INFO)
+logger.setLevel(logging.DEBUG if PREFIX else logging.INFO)
 logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 
 # Setup queue variables
 QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
-if prefix not in ('', DEV_PREFIX):
-    logger.critical(f"Unexpected prefix: '{prefix}' — expected '' or '{DEV_PREFIX}'")
-if prefix:
-    our_adjusted_convertHTML_queue_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_adjusted_convertOBSPDF_queue_name = prefix + OUR_OBS_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_adjusted_convertOtherPDF_queue_name = prefix + OUR_OTHER_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_other_adjusted_convertHTML_queue_name = OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
-    our_other_adjusted_convertOBSPDF_queue_name = OUR_OBS_PDF_NAME + QUEUE_NAME_SUFFIX # The other queue name
-    our_other_adjusted_convertOtherPDF_queue_name = OUR_OTHER_PDF_NAME + QUEUE_NAME_SUFFIX # The other queue name
+if PREFIX not in ('', DEV_PREFIX):
+    logger.critical(f"Unexpected prefix: '{PREFIX}' — expected '' or '{DEV_PREFIX}'")
+if PREFIX:
+    our_adjusted_convertHTML_queue_name = PREFIX + TX_JOB_HANDLER_QUEUE_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_adjusted_convertOBSPDF_queue_name = PREFIX + OBS_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_adjusted_convertOtherPDF_queue_name = PREFIX + OTHER_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_other_adjusted_convertHTML_queue_name = TX_JOB_HANDLER_QUEUE_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_convertOBSPDF_queue_name = OBS_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_convertOtherPDF_queue_name = OTHER_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # The other queue name
 else:
-    our_adjusted_convertHTML_queue_name = OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_adjusted_convertOBSPDF_queue_name = OUR_OBS_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_adjusted_convertOtherPDF_queue_name = OUR_OTHER_PDF_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
-    our_other_adjusted_convertHTML_queue_name = DEV_PREFIX + OUR_NAME + QUEUE_NAME_SUFFIX # The other queue name
-    our_other_adjusted_convertOBSPDF_queue_name = DEV_PREFIX + OUR_OBS_PDF_NAME + QUEUE_NAME_SUFFIX # The other queue name
-    our_other_adjusted_convertOtherPDF_queue_name = DEV_PREFIX + OUR_OTHER_PDF_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_adjusted_convertHTML_queue_name = TX_JOB_HANDLER_QUEUE_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_adjusted_convertOBSPDF_queue_name = OBS_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_adjusted_convertOtherPDF_queue_name = OTHER_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
+    our_other_adjusted_convertHTML_queue_name = DEV_PREFIX + TX_JOB_HANDLER_QUEUE_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_convertOBSPDF_queue_name = DEV_PREFIX + OBS_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # The other queue name
+    our_other_adjusted_convertOtherPDF_queue_name = DEV_PREFIX + OTHER_PDF_QUEUE_NAME + QUEUE_NAME_SUFFIX # The other queue name
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
 #our_callback_name = our_adjusted_convertHTML_queue_name + CALLBACK_SUFFIX
 #our_other_adjusted_callback_name = our_other_adjusted_convertHTML_queue_name + CALLBACK_SUFFIX
 
 
-prefix_string = f" with prefix '{prefix}'" if prefix else ""
+prefix_string = f" with prefix '{PREFIX}'" if PREFIX else ""
 logger.info(f"tx_enqueue_main.py{prefix_string}{test_string} running on Python v{sys.version}")
 
 
 # Connect to Redis now so it fails at import time if no Redis instance available
 logger.info(f"redis_hostname is '{redis_hostname}'")
-logger.debug(f"{prefixed_our_name} connecting to Redis…")
+logger.debug(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} connecting to Redis…")
 redis_connection = StrictRedis(host=redis_hostname)
 logger.debug("Getting total worker count in order to verify working Redis connection…")
 total_rq_worker_count = Worker.count(connection=redis_connection)
@@ -146,19 +147,19 @@ logger.debug(f"Total rq workers = {total_rq_worker_count}")
 # Get the Graphite URL from the environment, otherwise use a local test instance
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
 logger.info(f"graphite_url is '{graphite_url}'")
-stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
+stats_prefix = f"tx.{'dev' if PREFIX else 'prod'}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
 
 
-TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
-PDF_CDN_BUCKET = f'https://{prefix}cdn.door43.org/u/'
+TX_JOB_CDN_BUCKET = f'https://{PREFIX}cdn.door43.org/tx/job/'
+PDF_CDN_BUCKET = f'https://{PREFIX}cdn.door43.org/u/'
 
 
 app = Flask(__name__)
 # Not sure that we need this Flask logging
 # app.logger.addHandler(watchtower_log_handler)
 # logging.getLogger('werkzeug').addHandler(watchtower_log_handler)
-logger.info(f"{prefixed_our_name} is up and ready to go")
+logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} is up and ready to go")
 
 
 
@@ -201,24 +202,24 @@ def job_receiver():
     """
     #assert request.method == 'POST'
     stats_client.incr('posts.attempted')
-    logger.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
+    logger.info(f"tX {'('+PREFIX+')' if PREFIX else ''} enqueue received request: {request}")
 
     # Collect and log some helpful information for all three queues
     HTML_queue = Queue(our_adjusted_convertHTML_queue_name, connection=redis_connection)
     len_HTML_queue = len(HTML_queue)
-    stats_client.gauge('tx_job_handler.queue.length.current', len_HTML_queue)
+    stats_client.gauge(f'{TX_JOB_HANDLER_QUEUE_NAME}.queue.length.current', len_HTML_queue)
     len_HTML_failed_queue = handle_failed_queue(our_adjusted_convertHTML_queue_name)
-    stats_client.gauge('tx_job_handler.queue.length.failed', len_HTML_failed_queue)
+    stats_client.gauge(f'{TX_JOB_HANDLER_QUEUE_NAME}.queue.length.failed', len_HTML_failed_queue)
     OBSPDF_queue = Queue(our_adjusted_convertOBSPDF_queue_name, connection=redis_connection)
     len_OBSPDF_queue = len(OBSPDF_queue)
-    stats_client.gauge('obs_pdf.queue.length.current', len_OBSPDF_queue)
+    stats_client.gauge(f'{OBS_PDF_QUEUE_NAME}.queue.length.current', len_OBSPDF_queue)
     len_OBSPDF_failed_queue = handle_failed_queue(our_adjusted_convertOBSPDF_queue_name)
-    stats_client.gauge('obs_pdf.queue.OBSPDF.length.failed', len_OBSPDF_failed_queue)
+    stats_client.gauge(f'{OBS_PDF_QUEUE_NAME}.queue.length.failed', len_OBSPDF_failed_queue)
     otherPDF_queue = Queue(our_adjusted_convertOtherPDF_queue_name, connection=redis_connection)
     len_otherPDF_queue = len(otherPDF_queue)
-    stats_client.gauge('other_pdf.queue.length.current', len_otherPDF_queue)
+    stats_client.gauge(f'{OTHER_PDF_QUEUE_NAME}.queue.length.current', len_otherPDF_queue)
     len_otherPDF_failed_queue = handle_failed_queue(our_adjusted_convertOtherPDF_queue_name)
-    stats_client.gauge('other_pdf.queue.length.failed', len_otherPDF_failed_queue)
+    stats_client.gauge(f'{OTHER_PDF_QUEUE_NAME}.queue.length.failed', len_otherPDF_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
@@ -227,19 +228,19 @@ def job_receiver():
     logger.debug(f"Our {our_adjusted_convertHTML_queue_name} queue workers = {queue1_worker_count}")
     stats_client.gauge('workers.HTML.available', queue1_worker_count)
     if queue1_worker_count < 1:
-        logger.critical(f"{prefixed_our_name} has no HTML job handler workers running!")
+        logger.critical(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} has no HTML job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
     queue2_worker_count = Worker.count(queue=OBSPDF_queue)
     logger.debug(f"Our {our_adjusted_convertOBSPDF_queue_name} queue workers = {queue2_worker_count}")
     stats_client.gauge('workers.OBSPDF.available', queue2_worker_count)
     if queue2_worker_count < 1:
-        logger.critical(f"{prefixed_our_name} has no OBSPDF job handler workers running!")
+        logger.critical(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} has no OBSPDF job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
     queue3_worker_count = Worker.count(queue=otherPDF_queue)
     logger.debug(f"Our {our_adjusted_convertOtherPDF_queue_name} queue workers = {queue3_worker_count}")
     stats_client.gauge('workers.otherPDF.available', queue3_worker_count)
     if queue3_worker_count < 1:
-        logger.critical(f"{prefixed_our_name} has no otherPDF job handler workers running!")
+        logger.critical(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} has no otherPDF job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
 
     response_ok_flag, response_dict = check_posted_tx_payload(request, logger)
@@ -352,7 +353,7 @@ def job_receiver():
         other_queue2 = Queue(our_other_adjusted_queue_name2, connection=redis_connection)
         queue3 = Queue(our_adjusted_queue_name3, connection=redis_connection)
         other_queue3 = Queue(our_other_adjusted_queue_name3, connection=redis_connection)
-        logger.info(f"{prefixed_our_name} queued valid {job_type} job to {our_adjusted_queue_name} queue " \
+        logger.info(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} queued valid {job_type} job to {our_adjusted_queue_name} queue " \
                     f"({len_our_queue} {job_type} jobs now " \
                         f"for {Worker.count(queue=our_queue)} workers, " \
                     f"{len(other_queue)} {job_type} jobs in {our_other_adjusted_queue_name} queue " \
@@ -368,7 +369,7 @@ def job_receiver():
     else:
         stats_client.incr('posts.invalid')
         response_dict['status'] = 'invalid'
-        logger.error(f"{prefixed_our_name} ignored invalid payload; responding with {response_dict}\n")
+        logger.error(f"{PREFIXED_DOOR43_JOB_HANDLER_QUEUE_NAME} ignored invalid payload; responding with {response_dict}\n")
         return jsonify(response_dict), 400
 # end of job_receiver()
 
