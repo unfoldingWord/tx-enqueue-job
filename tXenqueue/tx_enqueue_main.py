@@ -41,6 +41,8 @@ from os import getenv, environ
 import sys
 from datetime import datetime, timedelta
 import logging
+import boto3
+import watchtower
 
 # Library (PyPI) imports
 from flask import Flask, request, jsonify
@@ -48,8 +50,6 @@ from flask import Flask, request, jsonify
 from redis import StrictRedis
 from rq import Queue, Worker
 from statsd import StatsClient # Graphite front-end
-from boto3 import Session
-from watchtower import CloudWatchLogHandler
 from urllib.parse import urlparse
 
 # Local imports
@@ -86,7 +86,7 @@ sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
 logger.addHandler(sh)
 aws_access_key_id = environ['AWS_ACCESS_KEY_ID']
-boto3_session = Session(aws_access_key_id=aws_access_key_id,
+boto3_client = boto3.client("logs", aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=environ['AWS_SECRET_ACCESS_KEY'],
                         region_name='us-west-2')
 test_mode_flag = getenv('TEST_MODE', '')
@@ -97,8 +97,8 @@ log_group_name = f"{'' if test_mode_flag or travis_flag else prefix}tX" \
                  f"{'_TravisCI' if travis_flag else ''}"
 # Enable DEBUG logging for dev- instances (but less logging for production)
 logger.setLevel(logging.DEBUG if prefix else logging.INFO)
-watchtower_log_handler = CloudWatchLogHandler(boto3_session=boto3_session,
-                                            log_group=log_group_name,
+watchtower_log_handler = watchtower.CloudWatchLogHandler(boto3_client=boto3_client,
+                                            log_group_name=log_group_name,
                                             stream_name=prefixed_our_name)
 logger.addHandler(watchtower_log_handler)
 logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
