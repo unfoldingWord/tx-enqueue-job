@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime
 import logging
 
+
 def get_unique_job_id() -> str:
     """
     :return string:
@@ -12,4 +13,3 @@ def get_unique_job_id() -> str:
         #job_id = hashlib.sha256(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f').encode('utf-8')).hexdigest()
     return job_id
 # end of get_unique_job_id()
-

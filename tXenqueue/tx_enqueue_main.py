@@ -277,4 +277,3 @@ def job_receiver():
 
 if __name__ == '__main__':
     app.run()
-

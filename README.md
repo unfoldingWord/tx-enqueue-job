@@ -11,7 +11,7 @@ develop:
 This is part of tX translationConverter platform initiated by a commit to the
 tX (Translation Converter Service) at [tx.org](https://???).
 
-See [here](https://forum.ccbt.bible/t/door43-org-tx-development-architecture/65)
+See [here](https://forum.door43.org/t/door43-org-tx-development-architecture/65)
 for a diagram of the overall flow of the tx (translationConverter) platform.
 
 That is more up-to-date than the write-up of the previous platform
