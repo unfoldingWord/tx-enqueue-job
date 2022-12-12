@@ -57,7 +57,7 @@ from check_posted_tx_payload import check_posted_tx_payload #, check_posted_call
 from tx_enqueue_helpers import get_unique_job_id
 
 
-OUR_NAME = 'tx_job_handler' # Becomes the (perhaps prefixed) queue name (and graphite name)
+OUR_NAME = 'tx_enqueue_job' # Becomes the (perhaps prefixed) queue name (and graphite name)
                         #   -- MUST match setup.py in tx_job_handler
 #CALLBACK_SUFFIX = '_callback'
 DEV_PREFIX = 'dev-'
@@ -128,8 +128,9 @@ logger.debug(f"Total rq workers = {total_rq_worker_count}")
 # Get the Graphite URL from the environment, otherwise use a local test instance
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
 logger.info(f"graphite_url is '{graphite_url}'")
-stats_prefix = f"tx.{'dev' if prefix else 'prod'}.enqueue-job"
-stats_client = StatsClient(host=graphite_url, port=8125, prefix=stats_prefix)
+tx_stats_prefix = f"tx.{'dev' if prefix else 'prod'}"
+enqueue_job_stats_prefix = f"{tx_stats_prefix}.enequeue-job"
+stats_client = StatsClient(host=graphite_url, port=8125)
 
 TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
 PDF_CDN_BUCKET = f'https://{prefix}cdn.door43.org/u/'
@@ -177,22 +178,22 @@ def job_receiver():
     Queue name is our_adjusted_convert_queue_name (may have been prefixed).
     """
     #assert request.method == 'POST'
-    stats_client.incr('posts.attempted')
+    stats_client.incr(f'{enqueue_job_stats_prefix}.posts.attempted')
     logger.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
 
     # Collect and log some helpful information for all three queues
     queue = Queue(our_adjusted_convert_queue_name, connection=redis_connection)
     len_queue = len(queue)
-    stats_client.gauge('queue.length.current', len_queue)
+    stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.current', len_queue)
     len_failed_queue = handle_failed_queue(our_adjusted_convert_queue_name)
-    stats_client.gauge('queue.length.failed', len_failed_queue)
+    stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.failed', len_failed_queue)
 
     # Find out how many workers we have
     total_worker_count = Worker.count(connection=redis_connection)
     logger.debug(f"Total rq workers = {total_worker_count}")
     queue1_worker_count = Worker.count(queue=queue)
     logger.debug(f"Our {our_adjusted_convert_queue_name} queue workers = {queue1_worker_count}")
-    stats_client.gauge('workers.available', queue1_worker_count)
+    stats_client.gauge(f'{enqueue_job_stats_prefix}.workers.available', queue1_worker_count)
     if queue1_worker_count < 1:
         logger.critical(f"{prefixed_our_name} has no job handler workers running!")
         # Go ahead and queue the job anyway for when a worker is restarted
@@ -266,10 +267,10 @@ def job_receiver():
                         f"for {Worker.count(queue=our_queue)} workers, " \
                     f"{len_failed_queue} failed jobs), " \
                     f"at {datetime.utcnow()}\n")
-        stats_client.incr('posts.succeeded')
+        stats_client.incr(f'{enqueue_job_stats_prefix}.posts.succeeded')
         return jsonify(our_response_dict)
     else:
-        stats_client.incr('posts.invalid')
+        stats_client.incr(f'{enqueue_job_stats_prefix}.posts.invalid')
         response_dict['status'] = 'invalid'
         logger.error(f"{prefixed_our_name} ignored invalid payload; responding with {response_dict}\n")
         return jsonify(response_dict), 400
