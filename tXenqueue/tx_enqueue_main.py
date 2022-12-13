@@ -57,7 +57,7 @@ from check_posted_tx_payload import check_posted_tx_payload #, check_posted_call
 from tx_enqueue_helpers import get_unique_job_id
 
 
-OUR_NAME = 'tx_enqueue_job' # Becomes the (perhaps prefixed) queue name (and graphite name)
+OUR_NAME = 'tx_job_handler' # Becomes the (perhaps prefixed) queue name (and graphite name)
                         #   -- MUST match setup.py in tx_job_handler
 #CALLBACK_SUFFIX = '_callback'
 DEV_PREFIX = 'dev-'
