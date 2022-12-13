@@ -129,7 +129,7 @@ logger.debug(f"Total rq workers = {total_rq_worker_count}")
 graphite_url = getenv('GRAPHITE_HOSTNAME', 'localhost')
 logger.info(f"graphite_url is '{graphite_url}'")
 tx_stats_prefix = f"tx.{'dev' if prefix else 'prod'}"
-enqueue_job_stats_prefix = f"{tx_stats_prefix}.enequeue-job"
+enqueue_job_stats_prefix = f"{tx_stats_prefix}.enqueue-job"
 stats_client = StatsClient(host=graphite_url, port=8125)
 
 TX_JOB_CDN_BUCKET = f'https://{prefix}cdn.door43.org/tx/job/'
