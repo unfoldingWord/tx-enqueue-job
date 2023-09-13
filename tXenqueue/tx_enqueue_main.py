@@ -70,7 +70,7 @@ WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable—set to 'dev-' for development
 prefixed_our_name = prefix + OUR_NAME
 
-JOB_TIMEOUT = '900s' if prefix else '800s' # Then a running job (taken out of the queue) will be considered to have failed
+JOB_TIMEOUT = '3600s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
     #       T4T is definitely one of our largest/slowest resources to lint and convert
 
