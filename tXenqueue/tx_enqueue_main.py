@@ -204,11 +204,9 @@ def job_receiver():
         our_adjusted_queue_name = our_adjusted_convert_queue_name
         if response_dict["output_format"] == "pdf":
             our_adjusted_queue_name += "_pdf"
-        elif 'repo_ref_type' in response_dict and 'repo_ref' in response_dict:
-            if (response_dict['repo_ref_type'] == "branch" and response_dict['repo_ref'] == "master") or \
+        elif 'repo_ref_type' in response_dict and 'repo_ref' in response_dict and \
+              (response_dict['repo_ref_type'] == "branch" and response_dict['repo_ref'] == "master") or \
                 (response_dict['repo_ref_type'] != "branch"):
-                our_adjusted_queue_name += "_priority"
-            else:
                 our_adjusted_queue_name += "_priority"
 
         # Collect and log some helpful information for all three queues
