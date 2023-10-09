@@ -220,6 +220,9 @@ def job_receiver():
         our_job_id = response_dict['job_id'] if 'job_id' in response_dict \
                         else get_unique_job_id()
 
+        if 'output_format' in response_dict and response_dict['output_format'] == "pdf":
+            our_adjusted_convert_queue_name += "_pdf"
+
         our_adjusted_queue_name = our_adjusted_convert_queue_name
         our_queue = queue
         expected_output_URL = f"{TX_JOB_CDN_BUCKET}{our_job_id}.zip"
