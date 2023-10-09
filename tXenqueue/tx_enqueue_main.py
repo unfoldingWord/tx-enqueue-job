@@ -182,23 +182,6 @@ def job_receiver():
     stats_client.incr(f'{enqueue_job_stats_prefix}.posts.attempted')
     logger.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
 
-    # Collect and log some helpful information for all three queues
-    queue = Queue(our_adjusted_convert_queue_name, connection=redis_connection)
-    len_queue = len(queue)
-    stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.current', len_queue)
-    len_failed_queue = handle_failed_queue(our_adjusted_convert_queue_name)
-    stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.failed', len_failed_queue)
-
-    # Find out how many workers we have
-    total_worker_count = Worker.count(connection=redis_connection)
-    logger.debug(f"Total rq workers = {total_worker_count}")
-    queue1_worker_count = Worker.count(queue=queue)
-    logger.debug(f"Our {our_adjusted_convert_queue_name} queue workers = {queue1_worker_count}")
-    stats_client.gauge(f'{enqueue_job_stats_prefix}.workers.available', queue1_worker_count)
-    if queue1_worker_count < 1:
-        logger.critical(f"{prefixed_our_name} has no job handler workers running!")
-        # Go ahead and queue the job anyway for when a worker is restarted
-
     # data = request.data
     # if 'release' in data and 'id' in data['release'] and 'repository' in data and 'subject' in data['repository']:
     #     data['job_id'] = f"Door43_PDF_requeset_{request['release']['id']}"
@@ -218,11 +201,28 @@ def job_receiver():
     if response_ok_flag:
         logger.debug("tx-enqueue-job processing good payload…")
 
+        if response_dict["output_format"] == "pdf":
+            our_adjusted_convert_queue_name += "_pdf"
+
+        # Collect and log some helpful information for all three queues
+        queue = Queue(our_adjusted_convert_queue_name, connection=redis_connection)
+        len_queue = len(queue)
+        stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.current', len_queue)
+        len_failed_queue = handle_failed_queue(our_adjusted_convert_queue_name)
+        stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.failed', len_failed_queue)
+
+        # Find out how many workers we have
+        total_worker_count = Worker.count(connection=redis_connection)
+        logger.debug(f"Total rq workers = {total_worker_count}")
+        queue1_worker_count = Worker.count(queue=queue)
+        logger.debug(f"Our {our_adjusted_convert_queue_name} queue workers = {queue1_worker_count}")
+        stats_client.gauge(f'{enqueue_job_stats_prefix}.workers.available', queue1_worker_count)
+        if queue1_worker_count < 1:
+            logger.critical(f"{prefixed_our_name} has no job handler workers running!")
+        # Go ahead and queue the job anyway for when a worker is restarted
+
         our_job_id = response_dict['job_id'] if 'job_id' in response_dict \
                         else get_unique_job_id()
-
-        if 'output_format' in response_dict and response_dict['output_format'] == "pdf":
-            our_adjusted_convert_queue_name += "_pdf"
 
         our_adjusted_queue_name = our_adjusted_convert_queue_name
         our_queue = queue
