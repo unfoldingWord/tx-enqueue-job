@@ -177,6 +177,7 @@ def job_receiver():
     Queues the approved jobs at redis instance at global redis_hostname:6379.
     Queue name is our_adjusted_convert_queue_name (may have been prefixed).
     """
+    global our_adjusted_convert_queue_name
     #assert request.method == 'POST'
     stats_client.incr(f'{enqueue_job_stats_prefix}.posts.attempted')
     logger.info(f"tX {'('+prefix+')' if prefix else ''} enqueue received request: {request}")
