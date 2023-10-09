@@ -201,14 +201,15 @@ def job_receiver():
     if response_ok_flag:
         logger.debug("tx-enqueue-job processing good payload…")
 
+        our_adjusted_queue_name = our_adjusted_convert_queue_name
         if response_dict["output_format"] == "pdf":
-            our_adjusted_convert_queue_name += "_pdf"
+            our_adjusted_queue_name += "_pdf"
         elif 'repo_ref_type' in response_dict and 'repo_ref' in response_dict:
             if (response_dict['repo_ref_type'] == "branch" and response_dict['repo_ref'] == "master") or \
                 (response_dict['repo_ref_type'] != "branch"):
-                our_adjusted_convert_queue_name += "_priority"
+                our_adjusted_queue_name += "_priority"
             else:
-                our_adjusted_convert_queue_name += "_priority"
+                our_adjusted_queue_name += "_priority"
 
         # Collect and log some helpful information for all three queues
         queue = Queue(our_adjusted_convert_queue_name, connection=redis_connection)
@@ -230,7 +231,6 @@ def job_receiver():
         our_job_id = response_dict['job_id'] if 'job_id' in response_dict \
                         else get_unique_job_id()
 
-        our_adjusted_queue_name = our_adjusted_convert_queue_name
         our_queue = queue
         expected_output_URL = f"{TX_JOB_CDN_BUCKET}{our_job_id}.zip"
 
