@@ -212,17 +212,17 @@ def job_receiver():
                 our_adjusted_queue_name += "_priority"
 
         # Collect and log some helpful information for all three queues
-        queue = Queue(our_adjusted_convert_queue_name, connection=redis_connection)
+        queue = Queue(our_adjusted_queue_name, connection=redis_connection)
         len_queue = len(queue)
         stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.current', len_queue)
-        len_failed_queue = handle_failed_queue(our_adjusted_convert_queue_name)
+        len_failed_queue = handle_failed_queue(our_adjusted_queue_name)
         stats_client.gauge(f'{enqueue_job_stats_prefix}.queue.length.failed', len_failed_queue)
 
         # Find out how many workers we have
         total_worker_count = Worker.count(connection=redis_connection)
         logger.debug(f"Total rq workers = {total_worker_count}")
         queue1_worker_count = Worker.count(queue=queue)
-        logger.debug(f"Our {our_adjusted_convert_queue_name} queue workers = {queue1_worker_count}")
+        logger.debug(f"Our {our_adjusted_queue_name} queue workers = {queue1_worker_count}")
         stats_client.gauge(f'{enqueue_job_stats_prefix}.workers.available', queue1_worker_count)
         if queue1_worker_count < 1:
             logger.critical(f"{prefixed_our_name} has no job handler workers running!")
