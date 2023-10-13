@@ -23,5 +23,5 @@ EXPOSE 8000
 #	QUEUE_PREFIX dev- (optional -- defaults to empty string)
 #	DEBUG_MODE True (optional -- defaults to False)
 
-# NOTE: this masterBranch listens on 8010 (develop on 8011)
+# NOTE: this masterBranch listens on 8010
 CMD ["gunicorn", "--bind", "0.0.0.0:8010", "tx_enqueue_main:app"]
