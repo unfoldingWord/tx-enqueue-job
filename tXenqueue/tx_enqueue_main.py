@@ -254,7 +254,7 @@ def job_receiver():
         # NOTE: No ttl specified on the next line—this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        our_queue.enqueue('webhook.job', our_response_dict, job_timeout=JOB_TIMEOUT, job_id=f'{prefixed_our_name}_{our_job_id}', result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
+        our_queue.enqueue('webhook.job', our_response_dict, job_timeout=JOB_TIMEOUT, job_id=f'{our_adjusted_convert_queue_name}_{our_job_id}', result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
         # Find out who our workers are
