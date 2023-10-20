@@ -68,8 +68,7 @@ WEBHOOK_URL_SEGMENT = '' # Leaving this blank will cause the service to run at '
 
 # Look at relevant environment variables
 prefix = getenv('QUEUE_PREFIX', '') # Gets (optional) QUEUE_PREFIX environment variable—set to 'dev-' for development
-suffix = getenv('QUEUE_SUFFIX', '') # Gets the queue suffix, which might be empty, "priority" or "pdf"
-prefixed_our_name = prefix + OUR_NAME + suffix
+prefixed_our_name = prefix + OUR_NAME
 
 JOB_TIMEOUT = '10800s' # Then a running job (taken out of the queue) will be considered to have failed
     # NOTE: This is the time until webhook.py returns after running the jobs.
@@ -105,12 +104,13 @@ logger.addHandler(watchtower_log_handler)
 logger.debug(f"Logging to AWS CloudWatch group '{log_group_name}' using key '…{aws_access_key_id[-2:]}'.")
 
 # Setup queue variables
+QUEUE_NAME_SUFFIX = '' # Used to switch to a different queue, e.g., '_1'
 if prefix not in ('', DEV_PREFIX):
     logger.critical(f"Unexpected prefix: '{prefix}' — expected '' or '{DEV_PREFIX}'")
 if prefix:
-    our_adjusted_convert_queue_name = prefix + OUR_NAME + suffix # Will become our main queue name
+    our_adjusted_convert_queue_name = prefix + OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
 else:
-    our_adjusted_convert_queue_name = OUR_NAME + suffix # Will become our main queue name
+    our_adjusted_convert_queue_name = OUR_NAME + QUEUE_NAME_SUFFIX # Will become our main queue name
 # NOTE: The prefixed version must also listen at a different port (specified in gunicorn run command)
 #our_callback_name = our_adjusted_convert_queue_name + CALLBACK_SUFFIX
 
@@ -254,7 +254,7 @@ def job_receiver():
         # NOTE: No ttl specified on the next line—this seems to cause unrun jobs to be just silently dropped
         #           (For now at least, we prefer them to just stay in the queue if they're not getting processed.)
         #       The timeout value determines the max run time of the worker once the job is accessed
-        our_queue.enqueue('webhook.job', our_response_dict, job_timeout=JOB_TIMEOUT, job_id=f'{our_adjusted_convert_queue_name}_{our_job_id}', result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
+        our_queue.enqueue('webhook.job', our_response_dict, job_timeout=JOB_TIMEOUT, job_id=f'{our_queue.name}_{our_job_id}', result_ttl=(60*60*24)) # A function named webhook.job will be called by the worker
         # NOTE: The above line can return a result from the webhook.job function. (By default, the result remains available for 500s.)
 
         # Find out who our workers are
