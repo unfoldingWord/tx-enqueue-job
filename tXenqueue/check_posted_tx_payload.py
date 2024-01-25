@@ -10,7 +10,7 @@ COMPULSORY_FIELDNAMES = 'job_id', \
                 'resource_type', 'input_format', 'output_format', 'source', 'repo_name', 'repo_owner', 'repo_ref', \
                 'repo_data_url', 'dcs_domain'
 OPTIONAL_FIELDNAMES = 'user_token', \
-                'callback', 'identifier', 'options', 'door43_webhook_received_at', 'repo_ref_type', 'commit_hash'
+                'callback', 'identifier', 'options', 'door43_webhook_received_at', 'repo_ref_type', 'commit_hash', 'DCS_event'
 ALL_FIELDNAMES = COMPULSORY_FIELDNAMES + OPTIONAL_FIELDNAMES
 OPTION_SUBFIELDNAMES = 'columns', 'css', 'language', 'line_spacing', \
                         'page_margins', 'page_size', 'toc_levels'
